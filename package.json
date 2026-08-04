@@ -1,0 +1,15 @@
+{
+  "name": "maltworks-cloud-app",
+  "version": "5.7.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev public",
+    "deploy": "wrangler pages deploy public --project-name=maltworks-cloud-app"
+  },
+  "devDependencies": {
+    "wrangler": "4.118.0"
+  },
+  "overrides": {
+    "undici": "7.29.0"
+  }
+}

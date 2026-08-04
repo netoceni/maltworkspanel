@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#17130f" />
+    <meta name="description" content="Painel de monitoramento e controle seguro dos controladores Maltworks." />
+    <title>Maltworks Cloud</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles-5.7.0.css" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+
+    <section id="loginView" class="login-shell">
+      <div class="login-story">
+        <div class="brand brand-large">
+          <span class="brand-mark" aria-hidden="true"><i></i></span>
+          <span><b>MALTWORKS</b><small>FERMENTATION SYSTEMS</small></span>
+        </div>
+        <div class="login-copy">
+          <p class="eyebrow">CONTROLE PRECISO. EM QUALQUER LUGAR.</p>
+          <h1>Sua fermentação<br />sob controle.</h1>
+          <p>Acompanhe temperaturas, relés, alarmes, receitas e configurações dos seus controladores Maltworks.</p>
+        </div>
+        <div class="signal-lines" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <p class="build-note">MALTWORKS CLOUD · DESDE 2026</p>
+      </div>
+
+      <div class="login-panel">
+        <form id="loginForm" class="login-card">
+          <div class="mobile-brand brand">
+            <span class="brand-mark" aria-hidden="true"><i></i></span>
+            <span><b>MALTWORKS</b><small>CLOUD</small></span>
+          </div>
+          <p class="eyebrow">ÁREA DO PROPRIETÁRIO</p>
+          <h2>Bem-vindo de volta</h2>
+          <p class="form-intro">Entre para acessar seus controladores.</p>
+          <label for="email">E-mail</label>
+          <input id="email" name="email" type="email" autocomplete="username" placeholder="voce@exemplo.com" required />
+          <label for="password">Senha</label>
+          <div class="password-field">
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Sua senha" minlength="12" required />
+            <button id="togglePassword" type="button" aria-label="Mostrar senha"><span aria-hidden="true">◉</span></button>
+          </div>
+          <div id="loginError" class="form-error" role="alert" hidden></div>
+          <button id="loginButton" class="button button-primary" type="submit"><span>ENTRAR NO PAINEL</span><span aria-hidden="true">→</span></button>
+          <p class="security-note"><span aria-hidden="true">◆</span> Conexão protegida e dados isolados por organização</p>
+        </form>
+      </div>
+    </section>
+
+    <div id="appView" class="app-shell" hidden>
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"><i></i></span>
+          <span><b>MALTWORKS</b><small>CLOUD</small></span>
+        </div>
+        <div class="topbar-actions">
+          <span id="globalStatus" class="status-pill neutral"><i></i><span>CONECTANDO</span></span>
+          <button id="refreshButton" class="icon-button" type="button" aria-label="Atualizar dados">↻</button>
+          <div class="user-block"><span class="user-avatar" aria-hidden="true">S</span><span><b id="userName">Usuário</b><small id="organizationName">Maltworks</small></span></div>
+          <button id="logoutButton" class="text-button" type="button">SAIR</button>
+        </div>
+      </header>
+
+      <aside class="sidebar">
+        <div class="sidebar-title"><span>CONTROLADORES</span><b id="deviceCount">0</b></div>
+        <nav id="deviceList" class="device-list" aria-label="Controladores"></nav>
+        <div class="sidebar-foot"><span>API</span><b>5.4.0</b><span>PAINEL</span><b>5.7.0</b></div>
+      </aside>
+
+      <main class="dashboard">
+        <section class="device-heading">
+          <div>
+            <p class="eyebrow">CONTROLADOR SELECIONADO</p>
+            <div class="title-line"><h1 id="deviceName">Controlador</h1><span id="deviceStatus" class="status-pill neutral"><i></i><span>AGUARDANDO</span></span></div>
+            <p id="deviceMeta" class="device-meta">—</p>
+          </div>
+          <div class="last-update"><span>ÚLTIMA ATUALIZAÇÃO</span><b id="lastUpdate">—</b></div>
+        </section>
+
+        <nav id="dashboardTabs" class="dashboard-tabs" role="tablist" aria-label="Seções do painel">
+          <button type="button" role="tab" data-tab="dashboard" aria-selected="true" class="active">DASHBOARD</button>
+          <button type="button" role="tab" data-tab="control" aria-selected="false">CONTROLE</button>
+          <button type="button" role="tab" data-tab="recipes" aria-selected="false">RECEITAS E RAMPAS</button>
+          <button type="button" role="tab" data-tab="gravity" aria-selected="false">DENSIDADE</button>
+          <button type="button" role="tab" data-tab="calibration" aria-selected="false">CALIBRAÇÃO</button>
+          <button type="button" role="tab" data-tab="alarms" aria-selected="false">ALARMES</button>
+          <button type="button" role="tab" data-tab="history" aria-selected="false">HISTÓRICO</button>
+          <button type="button" role="tab" data-tab="device" aria-selected="false">DISPOSITIVO</button>
+        </nav>
+
+        <section class="tab-panel" data-tab-panel="dashboard" role="tabpanel">
+          <section class="metrics-grid" aria-label="Indicadores principais">
+            <article class="metric-card temperature-card">
+              <div class="metric-top"><span class="metric-icon">°</span><span>GELADEIRA</span></div>
+              <div class="temperature-value"><b id="refrigeratorTemperature">—</b><span>°C</span></div>
+              <div class="target-row"><span>ALVO</span><b id="setpointValue">— °C</b><span>HISTERESE</span><b id="hysteresisValue">— °C</b></div>
+            </article>
+            <article class="metric-card">
+              <div class="metric-top"><span class="metric-icon">◎</span><span>POÇO TÉRMICO</span></div>
+              <div class="secondary-value"><b id="thermalWellTemperature">—</b><span>°C</span></div>
+              <p id="thermalWellStatus" class="metric-caption">Aguardando leitura</p>
+            </article>
+            <article class="metric-card">
+              <div class="metric-top"><span class="metric-icon">↯</span><span>CONTROLE</span></div>
+              <strong id="controlState" class="state-value">—</strong>
+              <div class="relay-row"><span id="coolingRelay" class="relay-pill">RESFRIAMENTO</span><span id="heatingRelay" class="relay-pill">AQUECIMENTO</span></div>
+            </article>
+            <article class="metric-card">
+              <div class="metric-top"><span class="metric-icon">⌁</span><span>SINAL WI-FI</span></div>
+              <div class="secondary-value"><b id="rssiValue">—</b><span>dBm</span></div>
+              <div class="signal-meter"><i id="signalMeter"></i></div>
+              <p id="signalQuality" class="metric-caption">—</p>
+            </article>
+          </section>
+
+          <section class="detail-grid dashboard-summary-grid">
+            <article class="detail-card">
+              <div class="section-heading compact"><div><p class="eyebrow">FERMENTAÇÃO</p><h2>Perfil atual</h2></div><span id="profileBadge" class="outline-badge">PARADO</span></div>
+              <dl class="data-list"><div><dt>Receita</dt><dd id="profileName">—</dd></div><div><dt>Etapas</dt><dd id="profileStages">—</dd></div><div><dt>Tempo restante</dt><dd id="profileRemaining">—</dd></div><div><dt>Proteção compressor</dt><dd id="compressorProtection">—</dd></div></dl>
+              <div class="profile-progress-block">
+                <div><span>PROGRESSO DA RECEITA</span><b id="profileProgressText">—</b></div>
+                <div class="profile-progress-track" role="progressbar" aria-label="Progresso da receita" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="profileProgressFill"></i></div>
+              </div>
+            </article>
+            <article id="alarmCard" class="detail-card alarm-card">
+              <div class="section-heading compact"><div><p class="eyebrow">SEGURANÇA</p><h2>Alarmes</h2></div><span id="alarmBadge" class="outline-badge">—</span></div>
+              <div class="alarm-summary"><span id="alarmSymbol" aria-hidden="true">✓</span><div><b id="alarmTitle">Sistema normal</b><p id="alarmText">Nenhum alarme ativo.</p></div></div>
+            </article>
+          </section>
+
+          <section class="chart-card dashboard-chart-card">
+            <div class="section-heading">
+              <div><p class="eyebrow">HISTÓRICO RECENTE</p><h2>Temperatura e setpoint</h2></div>
+              <button id="openHistoryButton" class="secondary-button" type="button">VER HISTÓRICO</button>
+            </div>
+            <div class="legend"><span><i class="legend-temp"></i>GELADEIRA</span><span><i class="legend-target"></i>SETPOINT</span></div>
+            <div class="chart-wrap dashboard-chart-wrap"><svg id="dashboardTemperatureChart" viewBox="0 0 900 260" role="img" aria-label="Gráfico recente de temperatura"><g id="dashboardChartGrid"></g><path id="dashboardTargetPath" class="chart-line target-line" d=""></path><path id="dashboardTemperaturePath" class="chart-line temperature-line" d=""></path><g id="dashboardChartLabels"></g></svg><div id="dashboardChartEmpty" class="chart-empty">Carregando histórico…</div></div>
+          </section>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="control" role="tabpanel" hidden>
+          <section class="detail-grid control-grid">
+            <article id="remoteControlCard" class="detail-card remote-control-card">
+              <div class="section-heading compact"><div><p class="eyebrow">MODO MANUAL</p><h2>Setpoint</h2></div><span id="commandBadge" class="outline-badge neutral">PRONTO</span></div>
+              <form id="setpointForm" class="remote-control-form">
+                <label for="remoteSetpoint">NOVO SETPOINT</label>
+                <div class="setpoint-input-row"><div class="temperature-input"><input id="remoteSetpoint" name="setpoint" type="number" min="-10" max="40" step="0.1" inputmode="decimal" required /><span>°C</span></div><button id="setpointCommandButton" type="submit">ALTERAR</button></div>
+                <p id="commandStatusText" class="command-status-text">O ESP32 validará e confirmará a alteração.</p>
+              </form>
+            </article>
+
+            <article class="detail-card configuration-card">
+              <div class="section-heading compact"><div><p class="eyebrow">CONTROLE LOCAL</p><h2>Parâmetros</h2></div><span id="configurationBadge" class="outline-badge neutral">PRONTO</span></div>
+              <form id="configurationForm" class="cloud-form">
+                <div class="cloud-form-grid">
+                  <label>HISTERESE<div class="field-with-unit"><input id="configurationHysteresis" type="number" min="0.1" max="5" step="0.1" required /><span>°C</span></div></label>
+                  <label>PROTEÇÃO DO COMPRESSOR<div class="field-with-unit"><input id="configurationCompressor" type="number" min="60" max="900" step="1" required /><span>s</span></div></label>
+                </div>
+                <button id="saveConfigurationButton" class="primary-action-button" type="submit">SALVAR PARÂMETROS</button>
+                <p id="configurationStatusText" class="command-status-text">Os parâmetros permanecem armazenados no ESP32.</p>
+              </form>
+            </article>
+          </section>
+          <aside class="tab-note"><b>CONTROLE CRÍTICO LOCAL</b><span>O ESP32 continua controlando aquecimento e resfriamento mesmo sem conexão com a nuvem. Durante uma receita ativa, alterações manuais são bloqueadas.</span></aside>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="recipes" role="tabpanel" hidden>
+          <section class="recipe-cloud-card tab-card-first">
+            <div class="section-heading recipe-cloud-heading">
+              <div><p class="eyebrow">MODO AUTOMÁTICO</p><h2>Receitas e rampas</h2><p class="section-copy">Monte até oito etapas de temperatura e duração. O ESP32 recebe uma cópia e continua executando o perfil offline.</p></div>
+              <button id="newRecipeButton" class="secondary-button" type="button">NOVA RECEITA</button>
+            </div>
+            <div class="profile-command-bar"><div><span id="profileCommandBadge" class="outline-badge neutral">PRONTO</span><p id="profileCommandText">Selecione uma receita para iniciar no controlador.</p></div><div class="profile-command-actions"><button id="pauseProfileButton" type="button">PAUSAR</button><button id="resumeProfileButton" type="button">CONTINUAR</button><button id="stopProfileButton" class="danger-button" type="button">INTERROMPER</button></div></div>
+            <div class="recipe-workspace">
+              <div class="recipe-library"><div class="subsection-title"><span>BIBLIOTECA NA NUVEM</span><b id="recipeCount">0</b></div><div id="recipeList" class="recipe-list"></div><p id="recipeEmpty" class="recipe-empty">Nenhuma receita criada. Use “Nova receita” para começar.</p></div>
+              <form id="recipeForm" class="recipe-form" hidden>
+                <input id="recipeId" type="hidden" />
+                <div class="recipe-form-heading"><div><p class="eyebrow">EDITOR CLOUD</p><h3 id="recipeFormTitle">Nova receita</h3></div><button id="cancelRecipeButton" class="icon-button" type="button" aria-label="Fechar editor">×</button></div>
+                <label for="recipeName">NOME DA RECEITA</label><input id="recipeName" maxlength="31" required />
+                <label for="recipeDescription">DESCRIÇÃO</label><textarea id="recipeDescription" maxlength="240" rows="2"></textarea>
+                <div class="stage-heading"><span>ETAPAS / RAMPAS</span><button id="addStageButton" type="button">+ ADICIONAR ETAPA</button></div>
+                <div id="recipeStages" class="recipe-stages"></div>
+                <button id="saveRecipeButton" class="primary-action-button" type="submit">SALVAR RECEITA NA NUVEM</button>
+              </form>
+            </div>
+          </section>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="gravity" role="tabpanel" hidden>
+          <section id="fermentationStartView" class="chart-card tab-card-first gravity-start-card">
+            <div class="section-heading">
+              <div><p class="eyebrow">ACOMPANHAMENTO MANUAL</p><h2>Curva de densidade</h2><p class="section-copy">Informe a OG do lote e adicione as leituras feitas com densímetro. Para refratômetro, informe a leitura em SG já corrigida pelo efeito do álcool.</p></div>
+              <span class="outline-badge neutral">CLOUD</span>
+            </div>
+            <form id="fermentationStartForm" class="cloud-form fermentation-start-form">
+              <div class="fermentation-start-grid">
+                <label>LOTE / CERVEJA<input id="fermentationNameInput" type="text" minlength="2" maxlength="80" placeholder="Ex.: APA lote 0002" required /></label>
+                <label>DENSIDADE ORIGINAL (OG)<div class="field-with-unit gravity-field"><input id="fermentationOgInput" type="number" min="0.990" max="1.200" step="0.001" inputmode="decimal" placeholder="1.052" required /><span>SG</span></div></label>
+                <label>INÍCIO DA FERMENTAÇÃO<input id="fermentationStartedAtInput" type="datetime-local" required /></label>
+              </div>
+              <button id="startFermentationButton" class="primary-action-button" type="submit">INICIAR ACOMPANHAMENTO</button>
+              <p id="fermentationStartStatus" class="command-status-text">As leituras ficam salvas na nuvem e acompanham o controlador selecionado.</p>
+            </form>
+          </section>
+
+          <div id="fermentationTrackingView" hidden>
+            <section class="chart-card tab-card-first gravity-overview-card">
+              <div class="section-heading gravity-heading">
+                <div><p class="eyebrow">CURVA DO LOTE</p><h2 id="fermentationName">Fermentação</h2><p id="fermentationStartedAt" class="section-copy">—</p></div>
+                <div class="gravity-heading-actions"><span id="fermentationStatusBadge" class="outline-badge neutral">ATIVO</span><button id="newFermentationButton" class="secondary-button" type="button" hidden>NOVO ACOMPANHAMENTO</button><button id="finishFermentationButton" class="danger-button" type="button">ENCERRAR</button></div>
+              </div>
+              <section class="gravity-metrics-grid" aria-label="Indicadores da fermentação">
+                <article><span>OG</span><b id="gravityOgValue">—</b><small>Densidade original</small></article>
+                <article><span>LEITURA ATUAL</span><b id="gravityCurrentValue">—</b><small id="gravityReadingAge">Sem medições</small></article>
+                <article><span>ATENUAÇÃO APARENTE</span><b id="gravityAttenuationValue">—</b><small>Estimativa pela densidade</small></article>
+                <article><span>ABV ESTIMADO</span><b id="gravityAbvValue">—</b><small>OG − densidade atual</small></article>
+              </section>
+              <div class="legend gravity-legend"><span><i class="legend-gravity"></i>DENSIDADE</span><span><i class="legend-og"></i>OG</span></div>
+              <div class="chart-wrap gravity-chart-wrap"><svg id="gravityChart" viewBox="0 0 900 320" role="img" aria-label="Gráfico da densidade manual"><g id="gravityChartGrid"></g><path id="gravityOgPath" class="chart-line gravity-og-line" d=""></path><path id="gravityPath" class="chart-line gravity-line" d=""></path><g id="gravityPoints"></g><g id="gravityChartLabels"></g></svg><div id="gravityChartEmpty" class="chart-empty">Adicione a primeira leitura para formar a curva.</div></div>
+            </section>
+
+            <section class="detail-grid gravity-entry-grid">
+              <article class="detail-card">
+                <div class="section-heading compact"><div><p class="eyebrow">MEDIÇÃO MANUAL</p><h2>Nova leitura</h2></div></div>
+                <form id="gravityReadingForm" class="cloud-form">
+                  <div class="gravity-reading-grid">
+                    <label>DENSIDADE<div class="field-with-unit gravity-field"><input id="gravityReadingInput" type="number" min="0.990" max="1.200" step="0.001" inputmode="decimal" placeholder="1.018" required /><span>SG</span></div></label>
+                    <label>DATA E HORA<input id="gravityMeasuredAtInput" type="datetime-local" required /></label>
+                  </div>
+                  <label>OBSERVAÇÃO — OPCIONAL<input id="gravityNoteInput" type="text" maxlength="120" placeholder="Ex.: início do descanso de diacetil" /></label>
+                  <button id="addGravityReadingButton" class="primary-action-button" type="submit">ADICIONAR LEITURA</button>
+                </form>
+              </article>
+              <article class="detail-card gravity-readings-card">
+                <div class="section-heading compact"><div><p class="eyebrow">HISTÓRICO MANUAL</p><h2>Leituras</h2></div><b id="gravityReadingCount" class="count-badge">0</b></div>
+                <div id="gravityReadingsList" class="gravity-readings-list"></div>
+                <p id="gravityReadingsEmpty" class="recipe-empty">Nenhuma leitura manual registrada.</p>
+              </article>
+            </section>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="calibration" role="tabpanel" hidden>
+          <section class="chart-card tab-card-first">
+            <div class="section-heading"><div><p class="eyebrow">SENSORES DS18B20</p><h2>Calibração</h2></div><span id="calibrationBadge" class="outline-badge neutral">PRONTO</span></div>
+            <form id="calibrationForm" class="cloud-form calibration-form">
+              <div class="calibration-grid">
+                <article class="calibration-sensor">
+                  <div class="calibration-sensor-head"><strong>Sensor da geladeira</strong><span id="refrigeratorCalibrationStatus" class="outline-badge neutral">DESCONECTADO</span></div>
+                  <dl class="calibration-readings"><div><dt>Leitura bruta</dt><dd id="refrigeratorRawReading">—</dd></div><div><dt>Leitura corrigida</dt><dd id="refrigeratorCorrectedReading">—</dd></div></dl>
+                  <label>OFFSET DE CALIBRAÇÃO<div class="field-with-unit"><input id="refrigeratorOffsetInput" type="number" min="-10" max="10" step="0.01" required /><span>°C</span></div></label>
+                  <p>Temperatura corrigida = leitura bruta + offset</p>
+                </article>
+                <article class="calibration-sensor">
+                  <div class="calibration-sensor-head"><strong>Sensor do poço térmico</strong><span id="thermalWellCalibrationStatus" class="outline-badge neutral">DESCONECTADO</span></div>
+                  <dl class="calibration-readings"><div><dt>Leitura bruta</dt><dd id="thermalWellRawReading">—</dd></div><div><dt>Leitura corrigida</dt><dd id="thermalWellCorrectedReading">—</dd></div></dl>
+                  <label>OFFSET DE CALIBRAÇÃO<div class="field-with-unit"><input id="thermalWellOffsetInput" type="number" min="-10" max="10" step="0.01" required /><span>°C</span></div></label>
+                  <p>Temperatura corrigida = leitura bruta + offset</p>
+                </article>
+              </div>
+              <div class="form-action-row"><button id="resetCalibrationButton" class="secondary-button" type="button">ZERAR CALIBRAÇÃO</button><button id="saveCalibrationButton" class="primary-action-button inline-action" type="submit">SALVAR CALIBRAÇÃO</button></div>
+              <p id="calibrationStatusText" class="command-status-text">Use um termômetro de referência e aguarde os sensores estabilizarem no mesmo meio.</p>
+            </form>
+          </section>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="alarms" role="tabpanel" hidden>
+          <section class="detail-grid alarms-grid">
+            <article class="detail-card alarm-overview-card">
+              <div class="section-heading compact"><div><p class="eyebrow">ESTADO ATUAL</p><h2>Alarmes</h2></div><span id="alarmSettingsBadge" class="outline-badge neutral">PRONTO</span></div>
+              <p id="alarmDetailedSummary" class="large-status-copy">Nenhum alarme ativo.</p>
+              <button id="acknowledgeAlarmsButton" class="secondary-button" type="button">RECONHECER ALARMES</button>
+            </article>
+            <article class="detail-card alarm-settings-card">
+              <div class="section-heading compact"><div><p class="eyebrow">PROTEÇÕES</p><h2>Configuração</h2></div></div>
+              <form id="alarmSettingsForm" class="cloud-form">
+                <div class="switch-grid">
+                  <label><input id="sensorAlarmEnabled" type="checkbox" /><span>Falha dos sensores</span></label>
+                  <label><input id="highTemperatureEnabled" type="checkbox" /><span>Temperatura alta</span></label>
+                  <label><input id="lowTemperatureEnabled" type="checkbox" /><span>Temperatura baixa</span></label>
+                  <label><input id="responseAlarmEnabled" type="checkbox" /><span>Resposta térmica</span></label>
+                </div>
+                <div class="cloud-form-grid alarm-values-grid">
+                  <label>LIMITE ALTO<div class="field-with-unit"><input id="highTemperatureLimit" type="number" min="-30" max="60" step="0.1" required /><span>°C</span></div></label>
+                  <label>LIMITE BAIXO<div class="field-with-unit"><input id="lowTemperatureLimit" type="number" min="-30" max="60" step="0.1" required /><span>°C</span></div></label>
+                  <label>VARIAÇÃO MÍNIMA<div class="field-with-unit"><input id="minimumExpectedChange" type="number" min="0.1" max="10" step="0.1" required /><span>°C</span></div></label>
+                  <label>TEMPO DE RESPOSTA<div class="field-with-unit"><input id="responseTimeoutMinutes" type="number" min="1" max="1440" step="1" required /><span>min</span></div></label>
+                </div>
+                <button id="saveAlarmSettingsButton" class="primary-action-button" type="submit">SALVAR ALARMES</button>
+                <p id="alarmSettingsStatusText" class="command-status-text">A configuração será validada e persistida pelo ESP32.</p>
+              </form>
+            </article>
+          </section>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="history" role="tabpanel" hidden>
+          <section class="chart-card tab-card-first">
+            <div class="section-heading">
+              <div><p class="eyebrow">HISTÓRICO TÉRMICO</p><h2>Temperatura e setpoint</h2></div>
+              <div class="history-actions"><div class="range-control" role="group" aria-label="Período do gráfico"><button type="button" data-limit="120">~30 MIN</button><button type="button" data-limit="240" class="active">~1 H</button><button type="button" data-limit="500">MÁXIMO</button></div><button id="exportHistoryButton" class="secondary-button" type="button">EXPORTAR CSV</button></div>
+            </div>
+            <div class="legend"><span><i class="legend-temp"></i>GELADEIRA</span><span><i class="legend-target"></i>SETPOINT</span></div>
+            <div id="chartWrap" class="chart-wrap"><svg id="temperatureChart" viewBox="0 0 900 300" role="img" aria-label="Gráfico de temperatura"><g id="chartGrid"></g><path id="targetPath" class="chart-line target-line" d=""></path><path id="temperaturePath" class="chart-line temperature-line" d=""></path><g id="chartLabels"></g></svg><div id="chartEmpty" class="chart-empty">Carregando histórico…</div></div>
+          </section>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="device" role="tabpanel" hidden>
+          <section class="detail-grid device-grid">
+            <article class="detail-card">
+              <div class="section-heading compact"><div><p class="eyebrow">DISPOSITIVO</p><h2>Sistema</h2></div><span id="firmwareBadge" class="outline-badge">—</span></div>
+              <dl class="data-list"><div><dt>Device ID</dt><dd id="systemDeviceId">—</dd></div><div><dt>Boot ID</dt><dd id="bootId">—</dd></div><div><dt>Uptime</dt><dd id="uptime">—</dd></div><div><dt>Sequência</dt><dd id="sequence">—</dd></div></dl>
+            </article>
+            <article class="detail-card">
+              <div class="section-heading compact"><div><p class="eyebrow">SENSORES</p><h2>Diagnóstico</h2></div></div>
+              <dl class="data-list"><div><dt>Geladeira</dt><dd id="deviceRefrigeratorSensor">—</dd></div><div><dt>Poço térmico</dt><dd id="deviceThermalWellSensor">—</dd></div><div><dt>Proteção configurada</dt><dd id="deviceCompressorDuration">—</dd></div><div><dt>Sinal</dt><dd id="deviceSignal">—</dd></div></dl>
+            </article>
+          </section>
+          <aside class="tab-note warning-note"><b>CONFIGURAÇÃO LOCAL DE EMERGÊNCIA</b><span>Wi‑Fi, endereço cloud e atualização OTA permanecem disponíveis na interface local do controlador. Isso evita perder o acesso ao dispositivo por uma configuração remota incorreta. OTA cloud será habilitada somente com firmware assinado.</span></aside>
+        </section>
+
+        <footer class="dashboard-footer"><span>MALTWORKS CLOUD</span><span>CONTROLE CRÍTICO EXECUTADO LOCALMENTE NO ESP32</span></footer>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/app-5.7.0.js" defer></script>
+  </body>
+</html>
