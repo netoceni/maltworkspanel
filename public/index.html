@@ -46,9 +46,54 @@
           <div id="loginError" class="form-error" role="alert" hidden></div>
           <button id="loginButton" class="button button-primary" type="submit"><span>ENTRAR NO PAINEL</span><span aria-hidden="true">→</span></button>
           <p class="security-note"><span aria-hidden="true">◆</span> Conexão protegida e dados isolados por organização</p>
+          <div class="sales-callout">
+            <span>Ainda não é cliente?</span>
+            <button id="openContactButton" type="button">CONHEÇA O MALTWORKS</button>
+          </div>
         </form>
       </div>
     </section>
+
+    <dialog id="contactDialog" class="contact-dialog" aria-labelledby="contactTitle">
+      <div class="contact-card">
+        <button id="closeContactButton" class="contact-close" type="button" aria-label="Fechar">×</button>
+        <form id="contactForm">
+          <p class="eyebrow">FALE COM A MALTWORKS</p>
+          <h2 id="contactTitle">Leve precisão para sua fermentação</h2>
+          <p class="form-intro">Preencha seus dados e nossa equipe entrará em contato.</p>
+
+          <label for="contactName">Nome</label>
+          <input id="contactName" name="name" type="text" autocomplete="name" minlength="2" maxlength="100" required />
+
+          <label for="contactEmail">E-mail</label>
+          <input id="contactEmail" name="email" type="email" autocomplete="email" maxlength="254" required />
+
+          <label for="contactPhone">Celular / WhatsApp</label>
+          <input id="contactPhone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="24" placeholder="(11) 99999-9999" required />
+
+          <div class="contact-honeypot" aria-hidden="true">
+            <label for="contactWebsite">Website</label>
+            <input id="contactWebsite" name="website" type="text" tabindex="-1" autocomplete="off" />
+          </div>
+
+          <label class="contact-consent" for="contactConsent">
+            <input id="contactConsent" name="consent" type="checkbox" required />
+            <span>Autorizo a Maltworks a utilizar estes dados para entrar em contato comigo.</span>
+          </label>
+
+          <div id="contactError" class="form-error" role="alert" hidden></div>
+          <button id="contactSubmitButton" class="button button-primary" type="submit"><span>SOLICITAR CONTATO</span><span aria-hidden="true">→</span></button>
+        </form>
+
+        <div id="contactSuccess" class="contact-success" role="status" hidden>
+          <span class="contact-success-mark" aria-hidden="true">✓</span>
+          <p class="eyebrow">SOLICITAÇÃO RECEBIDA</p>
+          <h2>Obrigado pelo interesse.</h2>
+          <p>Nossa equipe entrará em contato pelos dados informados.</p>
+          <button id="contactSuccessCloseButton" class="button button-primary" type="button"><span>FECHAR</span><span aria-hidden="true">→</span></button>
+        </div>
+      </div>
+    </dialog>
 
     <div id="appView" class="app-shell" hidden>
       <header class="topbar">
