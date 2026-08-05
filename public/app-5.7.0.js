@@ -50,6 +50,9 @@ function cacheElements() {
   for (const id of [
     "loginView", "appView", "loginForm", "email", "password", "togglePassword",
     "loginError", "loginButton", "logoutButton", "refreshButton", "globalStatus",
+    "openContactButton", "contactDialog", "closeContactButton", "contactForm",
+    "contactName", "contactEmail", "contactPhone", "contactWebsite", "contactConsent",
+    "contactError", "contactSubmitButton", "contactSuccess", "contactSuccessCloseButton",
     "userName", "organizationName", "deviceCount", "deviceList", "deviceName",
     "deviceStatus", "deviceMeta", "lastUpdate", "refrigeratorTemperature",
     "setpointValue", "hysteresisValue", "thermalWellTemperature", "thermalWellStatus",
@@ -99,6 +102,13 @@ function cacheElements() {
 
 function bindEvents() {
   elements.loginForm.addEventListener("submit", handleLogin);
+  elements.openContactButton.addEventListener("click", openContactDialog);
+  elements.closeContactButton.addEventListener("click", closeContactDialog);
+  elements.contactSuccessCloseButton.addEventListener("click", closeContactDialog);
+  elements.contactForm.addEventListener("submit", handleContactSubmit);
+  elements.contactDialog.addEventListener("click", (event) => {
+    if (event.target === elements.contactDialog) closeContactDialog();
+  });
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.refreshButton.addEventListener("click", () => void refreshAll(true));
   elements.togglePassword.addEventListener("click", togglePasswordVisibility);
@@ -223,6 +233,47 @@ async function handleLogin(event) {
     setLoginError(humanError(error, "Não foi possível entrar."));
   } finally {
     setLoginBusy(false);
+  }
+}
+
+function openContactDialog() {
+  elements.contactForm.hidden = false;
+  elements.contactSuccess.hidden = true;
+  setContactError("");
+  setContactBusy(false);
+  if (!elements.contactEmail.value) elements.contactEmail.value = elements.email.value.trim();
+  elements.contactDialog.showModal();
+  window.setTimeout(() => elements.contactName.focus(), 0);
+}
+
+function closeContactDialog() {
+  if (elements.contactDialog.open) elements.contactDialog.close();
+}
+
+async function handleContactSubmit(event) {
+  event.preventDefault();
+  setContactError("");
+  setContactBusy(true);
+
+  try {
+    await api("/v1/sales/leads", {
+      method: "POST",
+      body: {
+        name: elements.contactName.value.trim(),
+        email: elements.contactEmail.value.trim(),
+        phone: elements.contactPhone.value.trim(),
+        consent: elements.contactConsent.checked,
+        website: elements.contactWebsite.value,
+      },
+    });
+    elements.contactForm.reset();
+    elements.contactForm.hidden = true;
+    elements.contactSuccess.hidden = false;
+    elements.contactSuccessCloseButton.focus();
+  } catch (error) {
+    setContactError(humanError(error, "Não foi possível enviar seus dados. Tente novamente."));
+  } finally {
+    setContactBusy(false);
   }
 }
 
@@ -1997,6 +2048,18 @@ function setLoginBusy(busy) {
 function setLoginError(message) {
   elements.loginError.textContent = message;
   elements.loginError.hidden = !message;
+}
+
+function setContactBusy(busy) {
+  elements.contactSubmitButton.disabled = busy;
+  elements.contactSubmitButton.firstElementChild.textContent = busy
+    ? "ENVIANDO…"
+    : "SOLICITAR CONTATO";
+}
+
+function setContactError(message) {
+  elements.contactError.textContent = message;
+  elements.contactError.hidden = !message;
 }
 
 function togglePasswordVisibility() {
