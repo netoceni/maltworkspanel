@@ -421,6 +421,54 @@ input:focus-visible {
   backdrop-filter: blur(5px);
 }
 
+.claim-login-hint {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 18px;
+  padding: 13px 14px;
+  border: 1px solid #795b2e;
+  border-radius: 10px;
+  color: var(--cream);
+  background: rgb(200 148 53 / 9%);
+  font-size: 0.78rem;
+}
+
+.claim-login-hint b {
+  color: var(--gold-bright);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.claim-login-hint span,
+.claim-security-note { color: var(--muted); }
+
+.claim-security-note {
+  margin: 18px 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.claim-dialog input {
+  font-family: var(--mono);
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.claim-dialog #claimDeviceName {
+  font-family: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.device-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.device-heading-actions .secondary-button { white-space: nowrap; }
+
 .contact-card {
   position: relative;
   padding: clamp(28px, 6vw, 52px);
@@ -2203,6 +2251,8 @@ input:focus-visible {
   }
 
   .last-update { text-align: left; }
+  .device-heading-actions { width: 100%; align-items: stretch; flex-direction: column-reverse; gap: 12px; }
+  .device-heading-actions .secondary-button { width: 100%; }
   .title-line { flex-wrap: wrap; gap: 10px; }
   .metrics-grid,
   .detail-grid { grid-template-columns: 1fr; }

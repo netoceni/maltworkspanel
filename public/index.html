@@ -36,6 +36,10 @@
           <p class="eyebrow">ÁREA DO PROPRIETÁRIO</p>
           <h2>Bem-vindo de volta</h2>
           <p class="form-intro">Entre para acessar seus controladores.</p>
+          <div id="claimLoginHint" class="claim-login-hint" hidden>
+            <b>CONTROLADOR PRONTO PARA VINCULAR</b>
+            <span>Entre na sua conta para concluir a instalação.</span>
+          </div>
           <label for="email">E-mail</label>
           <input id="email" name="email" type="email" autocomplete="username" placeholder="voce@exemplo.com" required />
           <label for="password">Senha</label>
@@ -95,6 +99,38 @@
       </div>
     </dialog>
 
+    <dialog id="claimDialog" class="contact-dialog claim-dialog" aria-labelledby="claimTitle">
+      <div class="contact-card">
+        <button id="closeClaimButton" class="contact-close" type="button" aria-label="Fechar">×</button>
+        <form id="claimForm">
+          <p class="eyebrow">NOVO CONTROLADOR</p>
+          <h2 id="claimTitle">Vincular à sua conta</h2>
+          <p class="form-intro">Confira os dados mostrados na página de instalação do controlador.</p>
+
+          <label for="claimDeviceId">Device ID</label>
+          <input id="claimDeviceId" name="deviceId" type="text" inputmode="text" autocomplete="off" maxlength="15" placeholder="MW-000000000000" required />
+
+          <label for="claimPairingCode">Código de vínculo</label>
+          <input id="claimPairingCode" name="pairingCode" type="text" inputmode="text" autocomplete="one-time-code" minlength="8" maxlength="8" placeholder="8 caracteres" required />
+
+          <label for="claimDeviceName">Nome do controlador</label>
+          <input id="claimDeviceName" name="name" type="text" autocomplete="off" minlength="2" maxlength="80" placeholder="Ex.: Câmara de fermentação" required />
+
+          <p class="claim-security-note">O código confirma que você está com o controlador. O vínculo será feito com a conta atualmente conectada.</p>
+          <div id="claimError" class="form-error" role="alert" hidden></div>
+          <button id="claimSubmitButton" class="button button-primary" type="submit"><span>VINCULAR CONTROLADOR</span><span aria-hidden="true">→</span></button>
+        </form>
+
+        <div id="claimSuccess" class="contact-success" role="status" hidden>
+          <span class="contact-success-mark" aria-hidden="true">✓</span>
+          <p class="eyebrow">CONTROLADOR VINCULADO</p>
+          <h2>Instalação concluída.</h2>
+          <p>O controlador já pertence à sua conta Maltworks.</p>
+          <button id="claimSuccessCloseButton" class="button button-primary" type="button"><span>ABRIR CONTROLADOR</span><span aria-hidden="true">→</span></button>
+        </div>
+      </div>
+    </dialog>
+
     <div id="appView" class="app-shell" hidden>
       <header class="topbar">
         <div class="brand">
@@ -122,7 +158,10 @@
             <div class="title-line"><h1 id="deviceName">Controlador</h1><span id="deviceStatus" class="status-pill neutral"><i></i><span>AGUARDANDO</span></span></div>
             <p id="deviceMeta" class="device-meta">—</p>
           </div>
-          <div class="last-update"><span>ÚLTIMA ATUALIZAÇÃO</span><b id="lastUpdate">—</b></div>
+          <div class="device-heading-actions">
+            <button id="openClaimButton" class="secondary-button" type="button">+ VINCULAR CONTROLADOR</button>
+            <div class="last-update"><span>ÚLTIMA ATUALIZAÇÃO</span><b id="lastUpdate">—</b></div>
+          </div>
         </section>
 
         <nav id="dashboardTabs" class="dashboard-tabs" role="tablist" aria-label="Seções do painel">

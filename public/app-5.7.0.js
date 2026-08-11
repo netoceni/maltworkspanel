@@ -31,6 +31,7 @@ const state = {
   pendingConfigurationCommandId: null,
   pendingConfigurationScope: null,
   activeTab: "dashboard",
+  pendingClaim: null,
 };
 
 const elements = {};
@@ -53,6 +54,9 @@ function cacheElements() {
     "openContactButton", "contactDialog", "closeContactButton", "contactForm",
     "contactName", "contactEmail", "contactPhone", "contactWebsite", "contactConsent",
     "contactError", "contactSubmitButton", "contactSuccess", "contactSuccessCloseButton",
+    "claimLoginHint", "openClaimButton", "claimDialog", "closeClaimButton", "claimForm",
+    "claimDeviceId", "claimPairingCode", "claimDeviceName", "claimError",
+    "claimSubmitButton", "claimSuccess", "claimSuccessCloseButton",
     "userName", "organizationName", "deviceCount", "deviceList", "deviceName",
     "deviceStatus", "deviceMeta", "lastUpdate", "refrigeratorTemperature",
     "setpointValue", "hysteresisValue", "thermalWellTemperature", "thermalWellStatus",
@@ -108,6 +112,13 @@ function bindEvents() {
   elements.contactForm.addEventListener("submit", handleContactSubmit);
   elements.contactDialog.addEventListener("click", (event) => {
     if (event.target === elements.contactDialog) closeContactDialog();
+  });
+  elements.openClaimButton.addEventListener("click", () => openClaimDialog());
+  elements.closeClaimButton.addEventListener("click", closeClaimDialog);
+  elements.claimSuccessCloseButton.addEventListener("click", closeClaimDialog);
+  elements.claimForm.addEventListener("submit", handleDeviceClaim);
+  elements.claimDialog.addEventListener("click", (event) => {
+    if (event.target === elements.claimDialog) closeClaimDialog();
   });
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.refreshButton.addEventListener("click", () => void refreshAll(true));
@@ -199,6 +210,8 @@ function selectTab(requestedTab) {
 }
 
 async function restoreSession() {
+  state.pendingClaim = readClaimFromUrl();
+  renderClaimLoginHint();
   try {
     const response = await api("/v1/me");
     state.user = response.user;
@@ -304,6 +317,84 @@ async function enterDashboard() {
   }
   selectTab(state.activeTab);
   startTimers();
+  if (state.pendingClaim) openClaimDialog(state.pendingClaim);
+}
+
+function readClaimFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const deviceId = (params.get("claimDevice") || "").trim().toUpperCase();
+  const pairingCode = (params.get("pairingCode") || "").trim().toLowerCase();
+  if (!deviceId && !pairingCode) return null;
+  return { deviceId, pairingCode };
+}
+
+function renderClaimLoginHint() {
+  elements.claimLoginHint.hidden = !state.pendingClaim;
+}
+
+function openClaimDialog(claim = null) {
+  const source = claim || state.pendingClaim;
+  elements.claimForm.hidden = false;
+  elements.claimSuccess.hidden = true;
+  setClaimError("");
+  setClaimBusy(false);
+  if (source) {
+    elements.claimDeviceId.value = source.deviceId || "";
+    elements.claimPairingCode.value = source.pairingCode || "";
+  }
+  if (!elements.claimDeviceName.value) elements.claimDeviceName.value = "Controlador Maltworks";
+  if (!elements.claimDialog.open) elements.claimDialog.showModal();
+  window.setTimeout(() => {
+    const firstEmpty = [elements.claimDeviceId, elements.claimPairingCode, elements.claimDeviceName]
+      .find((field) => !field.value.trim());
+    (firstEmpty || elements.claimDeviceName).focus();
+    elements.claimDeviceName.select();
+  }, 0);
+}
+
+function closeClaimDialog() {
+  if (elements.claimDialog.open) elements.claimDialog.close();
+}
+
+async function handleDeviceClaim(event) {
+  event.preventDefault();
+  setClaimError("");
+  setClaimBusy(true);
+
+  const deviceId = elements.claimDeviceId.value.trim().toUpperCase();
+  const pairingCode = elements.claimPairingCode.value.trim().toLowerCase();
+  const name = elements.claimDeviceName.value.trim();
+
+  try {
+    const response = await api("/v1/devices/claim", {
+      method: "POST",
+      body: { deviceId, pairingCode, name },
+    });
+    state.pendingClaim = null;
+    clearClaimFromUrl();
+    renderClaimLoginHint();
+    state.selectedDeviceId = response.device.id;
+    writeLocalPreference("mw_selected_device", state.selectedDeviceId);
+    await loadDevices();
+    await Promise.all([loadLatest(), loadHistory(false), loadFermentation()]);
+    elements.claimForm.hidden = true;
+    elements.claimSuccess.hidden = false;
+    elements.claimSuccessCloseButton.focus();
+  } catch (error) {
+    const fallback = error instanceof AppError && error.code === "DEVICE_NOT_FOUND"
+      ? "O controlador ainda não chegou ao servidor. Aguarde alguns segundos e tente novamente."
+      : "Não foi possível vincular o controlador.";
+    setClaimError(humanError(error, fallback));
+  } finally {
+    setClaimBusy(false);
+  }
+}
+
+function clearClaimFromUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("claimDevice");
+  url.searchParams.delete("pairingCode");
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
 function showLogin() {
@@ -2060,6 +2151,18 @@ function setContactBusy(busy) {
 function setContactError(message) {
   elements.contactError.textContent = message;
   elements.contactError.hidden = !message;
+}
+
+function setClaimBusy(busy) {
+  elements.claimSubmitButton.disabled = busy;
+  elements.claimSubmitButton.firstElementChild.textContent = busy
+    ? "VINCULANDO…"
+    : "VINCULAR CONTROLADOR";
+}
+
+function setClaimError(message) {
+  elements.claimError.textContent = message;
+  elements.claimError.hidden = !message;
 }
 
 function togglePasswordVisibility() {
