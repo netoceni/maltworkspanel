@@ -1,4 +1,4 @@
-# Publicação do Maltworks Cloud Panel — Fase 5.7.0
+# Publicação do Maltworks Cloud Panel — Fase 5.8.0
 
 ## 1. Instalar e publicar
 
@@ -33,7 +33,8 @@ No painel Cloudflare:
 Depois que o domínio ficar ativo, abra `https://app.maltworks.com.br` e faça
 login. A API autorizada é `https://api.maltworks.com.br`.
 
-Esta versão usa a API 5.4.0 e o firmware 5.2.0 para administrar receitas,
+Esta versão usa a API 5.5.0 e o firmware 5.3.0 para administrar receitas,
 perfis, parâmetros de controle, calibração, alarmes e curvas de densidade pela
 nuvem. Publique o painel somente depois de atualizar a API e aplicar a migração
-`0005_fermentation_tracking.sql`. O firmware 5.2.0 não precisa ser regravado.
+`0007_user_signup.sql`. Para usar o novo código seguro de cadastro, grave o
+firmware 5.3.0 no controlador.
