@@ -1,6 +1,8 @@
 "use strict";
 
-const API_BASE = "https://api.maltworks.com.br";
+const API_BASE = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+  ? "http://127.0.0.1:8787"
+  : "https://api.maltworks.com.br";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const state = {
@@ -51,13 +53,17 @@ function cacheElements() {
   for (const id of [
     "loginView", "appView", "loginForm", "email", "password", "togglePassword",
     "loginError", "loginButton", "logoutButton", "refreshButton", "globalStatus",
-    "openContactButton", "contactDialog", "closeContactButton", "contactForm",
+    "signupForm", "signupName", "signupBirthDate", "signupPhone", "signupEmail",
+    "signupPassword", "signupPasswordConfirm", "signupTerms", "signupError",
+    "signupButton", "showSignupButton", "showLoginButton",
+    "contactDialog", "closeContactButton", "contactForm",
     "contactName", "contactEmail", "contactPhone", "contactWebsite", "contactConsent",
     "contactError", "contactSubmitButton", "contactSuccess", "contactSuccessCloseButton",
     "claimLoginHint", "openClaimButton", "claimDialog", "closeClaimButton", "claimForm",
-    "claimDeviceId", "claimPairingCode", "claimDeviceName", "claimError",
+    "claimRegistrationToken", "claimDeviceName", "claimError",
     "claimSubmitButton", "claimSuccess", "claimSuccessCloseButton",
     "userName", "organizationName", "deviceCount", "deviceList", "deviceName",
+    "emptyDeviceView", "emptyClaimButton",
     "deviceStatus", "deviceMeta", "lastUpdate", "refrigeratorTemperature",
     "setpointValue", "hysteresisValue", "thermalWellTemperature", "thermalWellStatus",
     "controlState", "coolingRelay", "heatingRelay", "rssiValue", "signalMeter",
@@ -106,7 +112,10 @@ function cacheElements() {
 
 function bindEvents() {
   elements.loginForm.addEventListener("submit", handleLogin);
-  elements.openContactButton.addEventListener("click", openContactDialog);
+  elements.signupForm.addEventListener("submit", handleSignup);
+  elements.showSignupButton.addEventListener("click", showSignup);
+  elements.showLoginButton.addEventListener("click", showLogin);
+  elements.openContactButton?.addEventListener("click", openContactDialog);
   elements.closeContactButton.addEventListener("click", closeContactDialog);
   elements.contactSuccessCloseButton.addEventListener("click", closeContactDialog);
   elements.contactForm.addEventListener("submit", handleContactSubmit);
@@ -114,12 +123,14 @@ function bindEvents() {
     if (event.target === elements.contactDialog) closeContactDialog();
   });
   elements.openClaimButton.addEventListener("click", () => openClaimDialog());
+  elements.emptyClaimButton.addEventListener("click", () => openClaimDialog());
   elements.closeClaimButton.addEventListener("click", closeClaimDialog);
   elements.claimSuccessCloseButton.addEventListener("click", closeClaimDialog);
   elements.claimForm.addEventListener("submit", handleDeviceClaim);
   elements.claimDialog.addEventListener("click", (event) => {
     if (event.target === elements.claimDialog) closeClaimDialog();
   });
+  elements.claimRegistrationToken.addEventListener("input", formatRegistrationTokenInput);
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.refreshButton.addEventListener("click", () => void refreshAll(true));
   elements.togglePassword.addEventListener("click", togglePasswordVisibility);
@@ -322,10 +333,11 @@ async function enterDashboard() {
 
 function readClaimFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  const deviceId = (params.get("claimDevice") || "").trim().toUpperCase();
-  const pairingCode = (params.get("pairingCode") || "").trim().toLowerCase();
-  if (!deviceId && !pairingCode) return null;
-  return { deviceId, pairingCode };
+  const registrationToken = formatRegistrationToken(
+    params.get("registrationToken") || "",
+  );
+  if (!registrationToken) return null;
+  return { registrationToken };
 }
 
 function renderClaimLoginHint() {
@@ -339,13 +351,12 @@ function openClaimDialog(claim = null) {
   setClaimError("");
   setClaimBusy(false);
   if (source) {
-    elements.claimDeviceId.value = source.deviceId || "";
-    elements.claimPairingCode.value = source.pairingCode || "";
+    elements.claimRegistrationToken.value = formatRegistrationToken(source.registrationToken || "");
   }
   if (!elements.claimDeviceName.value) elements.claimDeviceName.value = "Controlador Maltworks";
   if (!elements.claimDialog.open) elements.claimDialog.showModal();
   window.setTimeout(() => {
-    const firstEmpty = [elements.claimDeviceId, elements.claimPairingCode, elements.claimDeviceName]
+    const firstEmpty = [elements.claimRegistrationToken, elements.claimDeviceName]
       .find((field) => !field.value.trim());
     (firstEmpty || elements.claimDeviceName).focus();
     elements.claimDeviceName.select();
@@ -361,14 +372,13 @@ async function handleDeviceClaim(event) {
   setClaimError("");
   setClaimBusy(true);
 
-  const deviceId = elements.claimDeviceId.value.trim().toUpperCase();
-  const pairingCode = elements.claimPairingCode.value.trim().toLowerCase();
+  const registrationToken = elements.claimRegistrationToken.value.trim().toUpperCase();
   const name = elements.claimDeviceName.value.trim();
 
   try {
     const response = await api("/v1/devices/claim", {
       method: "POST",
-      body: { deviceId, pairingCode, name },
+      body: { registrationToken, name },
     });
     state.pendingClaim = null;
     clearClaimFromUrl();
@@ -381,8 +391,8 @@ async function handleDeviceClaim(event) {
     elements.claimSuccess.hidden = false;
     elements.claimSuccessCloseButton.focus();
   } catch (error) {
-    const fallback = error instanceof AppError && error.code === "DEVICE_NOT_FOUND"
-      ? "O controlador ainda não chegou ao servidor. Aguarde alguns segundos e tente novamente."
+    const fallback = error instanceof AppError && error.code === "REGISTRATION_TOKEN_NOT_FOUND"
+      ? "Código ainda não encontrado. Confirme o Wi-Fi do controlador, aguarde alguns segundos e tente novamente."
       : "Não foi possível vincular o controlador.";
     setClaimError(humanError(error, fallback));
   } finally {
@@ -390,10 +400,48 @@ async function handleDeviceClaim(event) {
   }
 }
 
+async function handleSignup(event) {
+  event.preventDefault();
+  setSignupError("");
+  if (elements.signupPassword.value !== elements.signupPasswordConfirm.value) {
+    setSignupError("As senhas informadas não são iguais.");
+    elements.signupPasswordConfirm.focus();
+    return;
+  }
+
+  setSignupBusy(true);
+  const email = elements.signupEmail.value.trim();
+  try {
+    await api("/v1/auth/signup", {
+      method: "POST",
+      body: {
+        displayName: elements.signupName.value.trim(),
+        birthDate: elements.signupBirthDate.value,
+        phone: elements.signupPhone.value.trim(),
+        email,
+        password: elements.signupPassword.value,
+        termsAccepted: elements.signupTerms.checked,
+      },
+    });
+    writeLocalPreference("mw_last_email", email);
+    elements.signupPassword.value = "";
+    elements.signupPasswordConfirm.value = "";
+    const session = await api("/v1/me");
+    state.user = session.user;
+    await enterDashboard();
+    showToast("Conta criada. Cadastre seu primeiro controlador.");
+  } catch (error) {
+    setSignupError(humanError(error, "Não foi possível criar sua conta."));
+  } finally {
+    setSignupBusy(false);
+  }
+}
+
 function clearClaimFromUrl() {
   const url = new URL(window.location.href);
   url.searchParams.delete("claimDevice");
   url.searchParams.delete("pairingCode");
+  url.searchParams.delete("registrationToken");
   window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
@@ -401,7 +449,18 @@ function showLogin() {
   clearTimers();
   elements.appView.hidden = true;
   elements.loginView.hidden = false;
+  elements.signupForm.hidden = true;
+  elements.loginForm.hidden = false;
   window.setTimeout(() => elements.email.focus(), 0);
+}
+
+function showSignup() {
+  setLoginError("");
+  setSignupError("");
+  elements.loginForm.hidden = true;
+  elements.signupForm.hidden = false;
+  if (!elements.signupEmail.value) elements.signupEmail.value = elements.email.value.trim();
+  window.setTimeout(() => elements.signupName.focus(), 0);
 }
 
 async function loadDevices() {
@@ -416,7 +475,12 @@ async function loadDevices() {
   }
 
   renderDeviceList();
-  if (!state.selectedDeviceId) renderNoDevices();
+  if (!state.selectedDeviceId) {
+    renderNoDevices();
+  } else {
+    document.querySelector("main.dashboard")?.classList.remove("no-devices");
+    elements.emptyDeviceView.hidden = true;
+  }
 }
 
 async function refreshAll(showConfirmation) {
@@ -2042,6 +2106,8 @@ function renderNoDevices() {
   state.fermentation = null;
   state.fermentationError = null;
   state.showNewFermentationForm = false;
+  document.querySelector("main.dashboard")?.classList.add("no-devices");
+  elements.emptyDeviceView.hidden = false;
   elements.deviceName.textContent = "Nenhum controlador";
   elements.deviceMeta.textContent = "Vincule um dispositivo à sua organização para começar.";
   setStatusPill(elements.deviceStatus, "neutral", "SEM DISPOSITIVOS");
@@ -2153,16 +2219,43 @@ function setContactError(message) {
   elements.contactError.hidden = !message;
 }
 
+function setSignupBusy(busy) {
+  elements.signupButton.disabled = busy;
+  elements.signupButton.firstElementChild.textContent = busy
+    ? "CRIANDO CONTA…"
+    : "CRIAR MINHA CONTA";
+}
+
+function setSignupError(message) {
+  elements.signupError.textContent = message;
+  elements.signupError.hidden = !message;
+}
+
 function setClaimBusy(busy) {
   elements.claimSubmitButton.disabled = busy;
   elements.claimSubmitButton.firstElementChild.textContent = busy
-    ? "VINCULANDO…"
-    : "VINCULAR CONTROLADOR";
+    ? "CADASTRANDO…"
+    : "CADASTRAR CONTROLADOR";
 }
 
 function setClaimError(message) {
   elements.claimError.textContent = message;
   elements.claimError.hidden = !message;
+}
+
+function formatRegistrationToken(value) {
+  const compact = String(value).replace(/[^a-z0-9]/giu, "").toUpperCase().slice(0, 30);
+  if (!compact) return "";
+  if (compact.length <= 2 && "MW".startsWith(compact)) return compact;
+  const payload = compact.startsWith("MW") ? compact.slice(2) : compact;
+  const deviceId = payload.slice(0, 12);
+  const proof = payload.slice(12, 28);
+  const groups = proof.match(/.{1,4}/gu) || [];
+  return `MW${deviceId ? `-${deviceId}` : ""}${groups.length ? `-${groups.join("-")}` : ""}`;
+}
+
+function formatRegistrationTokenInput(event) {
+  event.currentTarget.value = formatRegistrationToken(event.currentTarget.value);
 }
 
 function togglePasswordVisibility() {

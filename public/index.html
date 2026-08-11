@@ -7,7 +7,7 @@
     <meta name="description" content="Painel de monitoramento e controle seguro dos controladores Maltworks." />
     <title>Maltworks Cloud</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles-5.7.0.css" />
+    <link rel="stylesheet" href="/styles-5.8.0.css" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -51,9 +51,49 @@
           <button id="loginButton" class="button button-primary" type="submit"><span>ENTRAR NO PAINEL</span><span aria-hidden="true">→</span></button>
           <p class="security-note"><span aria-hidden="true">◆</span> Conexão protegida e dados isolados por organização</p>
           <div class="sales-callout">
-            <span>Ainda não é cliente?</span>
-            <button id="openContactButton" type="button">CONHEÇA O MALTWORKS</button>
+            <span>Ainda não tem uma conta?</span>
+            <button id="showSignupButton" type="button">CRIAR CONTA</button>
           </div>
+        </form>
+
+        <form id="signupForm" class="login-card signup-card" hidden>
+          <div class="mobile-brand brand">
+            <span class="brand-mark" aria-hidden="true"><i></i></span>
+            <span><b>MALTWORKS</b><small>CLOUD</small></span>
+          </div>
+          <p class="eyebrow">PRIMEIRO ACESSO</p>
+          <h2>Crie sua conta</h2>
+          <p class="form-intro">Cadastre-se antes de adicionar seu controlador.</p>
+
+          <label for="signupName">Nome completo</label>
+          <input id="signupName" name="displayName" type="text" autocomplete="name" minlength="3" maxlength="100" required />
+
+          <div class="signup-grid">
+            <label for="signupBirthDate">Data de nascimento
+              <input id="signupBirthDate" name="birthDate" type="date" autocomplete="bday" required />
+            </label>
+            <label for="signupPhone">Celular (opcional)
+              <input id="signupPhone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="24" placeholder="(11) 99999-9999" />
+            </label>
+          </div>
+
+          <label for="signupEmail">E-mail</label>
+          <input id="signupEmail" name="email" type="email" autocomplete="email" maxlength="254" required />
+
+          <label for="signupPassword">Senha</label>
+          <input id="signupPassword" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="Mínimo de 12 caracteres" required />
+
+          <label for="signupPasswordConfirm">Confirmar senha</label>
+          <input id="signupPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+
+          <label class="contact-consent" for="signupTerms">
+            <input id="signupTerms" name="termsAccepted" type="checkbox" required />
+            <span>Confirmo que tenho pelo menos 18 anos e aceito os termos de uso e a política de privacidade.</span>
+          </label>
+
+          <div id="signupError" class="form-error" role="alert" hidden></div>
+          <button id="signupButton" class="button button-primary" type="submit"><span>CRIAR MINHA CONTA</span><span aria-hidden="true">→</span></button>
+          <div class="sales-callout"><span>Já possui uma conta?</span><button id="showLoginButton" type="button">ENTRAR</button></div>
         </form>
       </div>
     </section>
@@ -105,20 +145,17 @@
         <form id="claimForm">
           <p class="eyebrow">NOVO CONTROLADOR</p>
           <h2 id="claimTitle">Vincular à sua conta</h2>
-          <p class="form-intro">Confira os dados mostrados na página de instalação do controlador.</p>
+          <p class="form-intro">Digite o código mostrado pelo controlador depois que ele se conectar ao Wi-Fi.</p>
 
-          <label for="claimDeviceId">Device ID</label>
-          <input id="claimDeviceId" name="deviceId" type="text" inputmode="text" autocomplete="off" maxlength="15" placeholder="MW-000000000000" required />
-
-          <label for="claimPairingCode">Código de vínculo</label>
-          <input id="claimPairingCode" name="pairingCode" type="text" inputmode="text" autocomplete="one-time-code" minlength="8" maxlength="8" placeholder="8 caracteres" required />
+          <label for="claimRegistrationToken">Código de cadastro</label>
+          <input id="claimRegistrationToken" name="registrationToken" type="text" inputmode="text" autocomplete="one-time-code" minlength="35" maxlength="35" placeholder="MW-000000000000-XXXX-XXXX-XXXX-XXXX" required />
 
           <label for="claimDeviceName">Nome do controlador</label>
           <input id="claimDeviceName" name="name" type="text" autocomplete="off" minlength="2" maxlength="80" placeholder="Ex.: Câmara de fermentação" required />
 
-          <p class="claim-security-note">O código confirma que você está com o controlador. O vínculo será feito com a conta atualmente conectada.</p>
+          <p class="claim-security-note">Este código é exclusivo do equipamento. O token interno usado pelo firmware nunca é exibido nem enviado ao navegador.</p>
           <div id="claimError" class="form-error" role="alert" hidden></div>
-          <button id="claimSubmitButton" class="button button-primary" type="submit"><span>VINCULAR CONTROLADOR</span><span aria-hidden="true">→</span></button>
+          <button id="claimSubmitButton" class="button button-primary" type="submit"><span>CADASTRAR CONTROLADOR</span><span aria-hidden="true">→</span></button>
         </form>
 
         <div id="claimSuccess" class="contact-success" role="status" hidden>
@@ -148,10 +185,18 @@
       <aside class="sidebar">
         <div class="sidebar-title"><span>CONTROLADORES</span><b id="deviceCount">0</b></div>
         <nav id="deviceList" class="device-list" aria-label="Controladores"></nav>
-        <div class="sidebar-foot"><span>API</span><b>5.4.0</b><span>PAINEL</span><b>5.7.0</b></div>
+        <div class="sidebar-foot"><span>API</span><b>5.5.0</b><span>PAINEL</span><b>5.8.0</b></div>
       </aside>
 
       <main class="dashboard">
+        <section id="emptyDeviceView" class="empty-device-view" hidden>
+          <div class="empty-device-mark" aria-hidden="true">M</div>
+          <p class="eyebrow">PRIMEIRO CONTROLADOR</p>
+          <h1>Cadastre seu Maltworks</h1>
+          <p>Sua conta está pronta. Conecte o controlador ao Wi-Fi, anote o código exibido e cadastre o equipamento aqui.</p>
+          <ol><li>Ligue o controlador.</li><li>Conecte-o ao Wi-Fi do local.</li><li>Digite o código completo exibido pelo equipamento.</li></ol>
+          <button id="emptyClaimButton" class="button button-primary" type="button"><span>CADASTRAR CONTROLADOR</span><span aria-hidden="true">→</span></button>
+        </section>
         <section class="device-heading">
           <div>
             <p class="eyebrow">CONTROLADOR SELECIONADO</p>
@@ -159,7 +204,7 @@
             <p id="deviceMeta" class="device-meta">—</p>
           </div>
           <div class="device-heading-actions">
-            <button id="openClaimButton" class="secondary-button" type="button">+ VINCULAR CONTROLADOR</button>
+            <button id="openClaimButton" class="secondary-button" type="button">+ CADASTRAR CONTROLADOR</button>
             <div class="last-update"><span>ÚLTIMA ATUALIZAÇÃO</span><b id="lastUpdate">—</b></div>
           </div>
         </section>
@@ -410,6 +455,6 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app-5.7.0.js" defer></script>
+    <script src="/app-5.8.0.js" defer></script>
   </body>
 </html>
