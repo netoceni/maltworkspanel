@@ -7,7 +7,7 @@
     <meta name="description" content="Painel de monitoramento e controle seguro dos controladores Maltworks." />
     <title>Maltworks Cloud</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles-5.9.0.css" />
+    <link rel="stylesheet" href="/styles-5.10.0.css" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -204,6 +204,7 @@
         <div class="topbar-actions">
           <span id="globalStatus" class="status-pill neutral"><i></i><span>CONECTANDO</span></span>
           <button id="refreshButton" class="icon-button" type="button" aria-label="Atualizar dados">↻</button>
+          <a id="adminAccessLink" class="admin-access-link" href="https://admin.maltworks.com.br" target="_blank" rel="noopener" title="Abrir administração do sistema" hidden><span aria-hidden="true">◆</span><b>ADMIN</b></a>
           <div class="user-block"><span class="user-avatar" aria-hidden="true">S</span><span><b id="userName">Usuário</b><small id="organizationName">Maltworks</small></span></div>
           <button id="logoutButton" class="text-button" type="button">SAIR</button>
         </div>
@@ -212,7 +213,7 @@
       <aside class="sidebar">
         <div class="sidebar-title"><span>CONTROLADORES</span><b id="deviceCount">0</b></div>
         <nav id="deviceList" class="device-list" aria-label="Controladores"></nav>
-        <div class="sidebar-foot"><span>API</span><b>5.6.0</b><span>PAINEL</span><b>5.9.0</b></div>
+        <div class="sidebar-foot"><span>API</span><b>5.7.0</b><span>PAINEL</span><b>5.10.0</b></div>
       </aside>
 
       <main class="dashboard">
@@ -486,6 +487,6 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app-5.9.0.js" defer></script>
+    <script src="/app-5.10.0.js" defer></script>
   </body>
 </html>

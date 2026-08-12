@@ -3,10 +3,14 @@
 const API_BASE = ["localhost", "127.0.0.1"].includes(window.location.hostname)
   ? "http://127.0.0.1:8787"
   : "https://api.maltworks.com.br";
+const ADMIN_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+  ? "http://127.0.0.1:8791/"
+  : "https://admin.maltworks.com.br";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const state = {
   user: null,
+  capabilities: { systemAdmin: false },
   devices: [],
   selectedDeviceId: null,
   latest: null,
@@ -53,6 +57,7 @@ function cacheElements() {
   for (const id of [
     "loginView", "appView", "loginForm", "email", "password", "togglePassword",
     "loginError", "loginButton", "logoutButton", "refreshButton", "globalStatus",
+    "adminAccessLink",
     "signupForm", "signupName", "signupBirthDate", "signupPhone", "signupEmail",
     "signupPassword", "signupPasswordConfirm", "signupTerms", "signupError",
     "signupButton", "showSignupButton", "showLoginButton",
@@ -144,6 +149,7 @@ function bindEvents() {
   });
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.refreshButton.addEventListener("click", () => void refreshAll(true));
+  elements.adminAccessLink.href = ADMIN_URL;
   elements.togglePassword.addEventListener("click", togglePasswordVisibility);
   elements.setpointForm.addEventListener("submit", handleSetpointCommand);
   elements.newRecipeButton.addEventListener("click", () => openRecipeForm());
@@ -237,6 +243,7 @@ async function restoreSession() {
   try {
     const response = await api("/v1/me");
     state.user = response.user;
+    state.capabilities = response.capabilities || { systemAdmin: false };
     await enterDashboard();
   } catch (error) {
     showLogin();
@@ -263,6 +270,7 @@ async function handleLogin(event) {
     elements.password.value = "";
     const session = await api("/v1/me");
     state.user = session.user;
+    state.capabilities = session.capabilities || { systemAdmin: false };
     await enterDashboard();
   } catch (error) {
     setLoginError(humanError(error, "Não foi possível entrar."));
@@ -320,6 +328,7 @@ async function handleLogout() {
   }
   clearTimers();
   state.user = null;
+  state.capabilities = { systemAdmin: false };
   state.devices = [];
   state.recipes = [];
   state.fermentation = null;
@@ -498,6 +507,7 @@ async function handleSignup(event) {
     elements.signupPasswordConfirm.value = "";
     const session = await api("/v1/me");
     state.user = session.user;
+    state.capabilities = session.capabilities || { systemAdmin: false };
     await enterDashboard();
     showToast("Conta criada. Cadastre seu primeiro controlador.");
   } catch (error) {
@@ -678,6 +688,7 @@ async function loadFermentation() {
 function renderUser() {
   elements.userName.textContent = state.user?.displayName || state.user?.email || "Usuário";
   elements.organizationName.textContent = state.user?.memberships?.[0]?.organizationName || "Maltworks";
+  elements.adminAccessLink.hidden = state.capabilities.systemAdmin !== true;
   const role = state.user?.memberships?.[0]?.role;
   elements.deleteDeviceZone.hidden = !["owner", "admin"].includes(role);
 }

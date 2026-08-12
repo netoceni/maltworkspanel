@@ -686,6 +686,31 @@ input:focus-visible {
   padding-left: 8px;
 }
 
+.admin-access-link {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid #637337;
+  border-radius: 8px;
+  color: #dce9a9;
+  background: linear-gradient(145deg, rgb(99 115 55 / 20%), rgb(30 37 22 / 50%));
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-decoration: none;
+  transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.admin-access-link:hover {
+  border-color: #a3bb4d;
+  color: #f0f7ce;
+  transform: translateY(-1px);
+}
+
+.admin-access-link > span { color: #b8d552; }
+
 .user-block > span:last-child {
   display: grid;
   gap: 1px;
