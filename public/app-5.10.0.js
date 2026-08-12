@@ -3,24 +3,35 @@
 const API_BASE = ["localhost", "127.0.0.1"].includes(window.location.hostname)
   ? "http://127.0.0.1:8787"
   : "https://api.maltworks.com.br";
+const ADMIN_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+  ? "http://127.0.0.1:8791/"
+  : "https://admin.maltworks.com.br";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const state = {
   user: null,
+  capabilities: { systemAdmin: false },
   devices: [],
   selectedDeviceId: null,
   latest: null,
   history: [],
+  historyFrom: null,
+  historyTo: null,
   recipes: [],
   fermentation: null,
   fermentationError: null,
   fermentationBusy: false,
   showNewFermentationForm: false,
-  historyLimit: 240,
+  historyRange: "600",
+  chartPaused: false,
+  chartPausedAt: null,
+  chartRevision: 0,
   uiTimer: null,
   refreshTimer: null,
   historyTimer: null,
+  supportingTimer: null,
   busy: false,
+  historyBusy: false,
   supportingBusy: false,
   commandBusy: false,
   recipeBusy: false,
@@ -53,6 +64,7 @@ function cacheElements() {
   for (const id of [
     "loginView", "appView", "loginForm", "email", "password", "togglePassword",
     "loginError", "loginButton", "logoutButton", "refreshButton", "globalStatus",
+    "adminAccessLink",
     "signupForm", "signupName", "signupBirthDate", "signupPhone", "signupEmail",
     "signupPassword", "signupPasswordConfirm", "signupTerms", "signupError",
     "signupButton", "showSignupButton", "showLoginButton",
@@ -144,6 +156,7 @@ function bindEvents() {
   });
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.refreshButton.addEventListener("click", () => void refreshAll(true));
+  elements.adminAccessLink.href = ADMIN_URL;
   elements.togglePassword.addEventListener("click", togglePasswordVisibility);
   elements.setpointForm.addEventListener("submit", handleSetpointCommand);
   elements.newRecipeButton.addEventListener("click", () => openRecipeForm());
@@ -169,15 +182,22 @@ function bindEvents() {
   elements.calibrationForm.addEventListener("input", () => { state.calibrationDirty = true; });
   elements.alarmSettingsForm.addEventListener("input", () => { state.alarmsDirty = true; });
 
-  document.querySelectorAll("[data-limit]").forEach((button) => {
+  document.querySelectorAll("[data-temperature-range]").forEach((button) => {
     button.addEventListener("click", () => {
-      state.historyLimit = Number(button.dataset.limit);
-      document.querySelectorAll("[data-limit]").forEach((item) => {
-        item.classList.toggle("active", item === button);
+      if (state.chartPaused) return;
+      state.historyRange = button.dataset.temperatureRange;
+      state.chartRevision += 1;
+      document.querySelectorAll("[data-temperature-range]").forEach((item) => {
+        item.classList.toggle("active", item.dataset.temperatureRange === state.historyRange);
       });
+      scheduleHistoryRefresh();
       void loadHistory(true);
     });
   });
+  document.querySelectorAll("[data-chart-pause]").forEach((button) => {
+    button.addEventListener("click", toggleChartPause);
+  });
+  updateChartLiveControls();
 
   window.addEventListener("focus", () => {
     if (!elements.appView.hidden) void refreshAll(false);
@@ -237,6 +257,7 @@ async function restoreSession() {
   try {
     const response = await api("/v1/me");
     state.user = response.user;
+    state.capabilities = response.capabilities || { systemAdmin: false };
     await enterDashboard();
   } catch (error) {
     showLogin();
@@ -263,6 +284,7 @@ async function handleLogin(event) {
     elements.password.value = "";
     const session = await api("/v1/me");
     state.user = session.user;
+    state.capabilities = session.capabilities || { systemAdmin: false };
     await enterDashboard();
   } catch (error) {
     setLoginError(humanError(error, "Não foi possível entrar."));
@@ -320,6 +342,7 @@ async function handleLogout() {
   }
   clearTimers();
   state.user = null;
+  state.capabilities = { systemAdmin: false };
   state.devices = [];
   state.recipes = [];
   state.fermentation = null;
@@ -498,6 +521,7 @@ async function handleSignup(event) {
     elements.signupPasswordConfirm.value = "";
     const session = await api("/v1/me");
     state.user = session.user;
+    state.capabilities = session.capabilities || { systemAdmin: false };
     await enterDashboard();
     showToast("Conta criada. Cadastre seu primeiro controlador.");
   } catch (error) {
@@ -596,11 +620,24 @@ async function refreshSupportingData() {
 
   try {
     await loadDevices();
-    await Promise.all([loadHistory(false), loadFermentation()]);
+    await loadFermentation();
   } catch (error) {
     handleRefreshError(error);
   } finally {
     state.supportingBusy = false;
+  }
+}
+
+async function refreshHistory() {
+  if (state.chartPaused || state.historyBusy || !state.selectedDeviceId || document.hidden) return;
+  state.historyBusy = true;
+
+  try {
+    await loadHistory(false);
+  } catch (error) {
+    handleRefreshError(error);
+  } finally {
+    state.historyBusy = false;
   }
 }
 
@@ -637,11 +674,24 @@ async function loadLatest() {
 }
 
 async function loadHistory(showConfirmation) {
-  if (!state.selectedDeviceId) return;
+  if (state.chartPaused || !state.selectedDeviceId) return;
+  const requestedRange = state.historyRange;
+  const requestedRevision = state.chartRevision;
   const response = await api(
-    `/v1/devices/${encodeURIComponent(state.selectedDeviceId)}/telemetry?limit=${state.historyLimit}`,
+    `/v1/devices/${encodeURIComponent(state.selectedDeviceId)}/telemetry?range=${encodeURIComponent(requestedRange)}&maxPoints=720`,
   );
+  if (
+    state.chartPaused ||
+    requestedRange !== state.historyRange ||
+    requestedRevision !== state.chartRevision
+  ) return;
   state.history = Array.isArray(response.points) ? response.points : [];
+  state.historyFrom = response.from !== null && Number.isFinite(Number(response.from))
+    ? Number(response.from)
+    : null;
+  state.historyTo = response.to !== null && Number.isFinite(Number(response.to))
+    ? Number(response.to)
+    : null;
   renderChart();
   if (showConfirmation) showToast("Período do gráfico atualizado.");
 }
@@ -678,6 +728,7 @@ async function loadFermentation() {
 function renderUser() {
   elements.userName.textContent = state.user?.displayName || state.user?.email || "Usuário";
   elements.organizationName.textContent = state.user?.memberships?.[0]?.organizationName || "Maltworks";
+  elements.adminAccessLink.hidden = state.capabilities.systemAdmin !== true;
   const role = state.user?.memberships?.[0]?.role;
   elements.deleteDeviceZone.hidden = !["owner", "admin"].includes(role);
 }
@@ -1909,6 +1960,7 @@ function updateTimeSensitiveUi() {
   const gravityReadings = state.fermentation?.readings;
   const lastGravityReading = Array.isArray(gravityReadings) ? gravityReadings.at(-1) : null;
   if (lastGravityReading) elements.gravityReadingAge.textContent = timeAgo(lastGravityReading.measuredAt);
+  if (!state.chartPaused && state.history.length) renderChart();
 
   const receivedAt = state.latest?.receivedAt;
   if (!receivedAt) return;
@@ -1932,9 +1984,16 @@ function renderAlarms(alarms) {
 }
 
 function renderChart() {
+  const window = temperatureChartWindow();
   const points = [...state.history]
     .reverse()
-    .filter((point) => Number.isFinite(Number(point.refrigeratorValue)));
+    .filter((point) => {
+      const timestamp = Number(point.receivedAt);
+      return point.refrigeratorValue !== null &&
+        Number.isFinite(Number(point.refrigeratorValue)) &&
+        (!Number.isFinite(window.start) || timestamp >= window.start) &&
+        (!Number.isFinite(window.end) || timestamp <= window.end);
+    });
 
   renderTemperatureChart(points, {
     grid: elements.chartGrid,
@@ -1943,6 +2002,8 @@ function renderChart() {
     targetPath: elements.targetPath,
     empty: elements.chartEmpty,
     height: 300,
+    startTime: window.start,
+    endTime: window.end,
   });
   renderTemperatureChart(points, {
     grid: elements.dashboardChartGrid,
@@ -1951,6 +2012,58 @@ function renderChart() {
     targetPath: elements.dashboardTargetPath,
     empty: elements.dashboardChartEmpty,
     height: 260,
+    startTime: window.start,
+    endTime: window.end,
+  });
+}
+
+function temperatureChartWindow() {
+  const currentTime = state.chartPaused
+    ? state.chartPausedAt
+    : Math.floor(Date.now() / 1000);
+  const end = Number.isFinite(currentTime)
+    ? Math.max(currentTime, Number(state.historyTo) || 0)
+    : state.historyTo;
+  if (state.historyRange === "all") {
+    return { start: state.historyFrom, end };
+  }
+  const rangeSeconds = Number(state.historyRange);
+  return {
+    start: Number.isFinite(end) && Number.isFinite(rangeSeconds) ? end - rangeSeconds : state.historyFrom,
+    end,
+  };
+}
+
+function toggleChartPause() {
+  state.chartPaused = !state.chartPaused;
+  state.chartPausedAt = state.chartPaused ? Math.floor(Date.now() / 1000) : null;
+  state.chartRevision += 1;
+
+  if (state.chartPaused) {
+    if (state.historyTimer) window.clearInterval(state.historyTimer);
+    state.historyTimer = null;
+    showToast("Gráfico pausado. O controlador continua funcionando normalmente.");
+  } else {
+    scheduleHistoryRefresh();
+    void loadHistory(false);
+    showToast("Gráfico retomado em tempo real.");
+  }
+
+  updateChartLiveControls();
+  renderChart();
+}
+
+function updateChartLiveControls() {
+  document.querySelectorAll("[data-chart-live-status]").forEach((status) => {
+    status.textContent = state.chartPaused ? "● PAUSADO" : "● AO VIVO";
+    status.classList.toggle("paused", state.chartPaused);
+  });
+  document.querySelectorAll("[data-chart-pause]").forEach((button) => {
+    button.textContent = state.chartPaused ? "RETOMAR" : "PAUSAR";
+    button.setAttribute("aria-pressed", state.chartPaused ? "true" : "false");
+  });
+  document.querySelectorAll("[data-temperature-range]").forEach((button) => {
+    button.disabled = state.chartPaused;
   });
 }
 
@@ -1962,6 +2075,8 @@ function renderTemperatureChart(points, graph) {
     targetPath: targetPathElement,
     empty,
     height,
+    startTime,
+    endTime,
   } = graph;
   grid.replaceChildren();
   labels.replaceChildren();
@@ -1987,14 +2102,22 @@ function renderTemperatureChart(points, graph) {
 
   const plotWidth = width - pad.left - pad.right;
   const plotHeight = height - pad.top - pad.bottom;
-  const x = (index) => pad.left + (index / (points.length - 1)) * plotWidth;
+  const firstTimestamp = Number(points[0].receivedAt);
+  const lastTimestamp = Number(points[points.length - 1].receivedAt);
+  const domainStart = Number.isFinite(startTime) ? startTime : firstTimestamp;
+  const domainEnd = Number.isFinite(endTime) && endTime > domainStart ? endTime : lastTimestamp;
+  const timeSpanSeconds = Math.max(domainEnd - domainStart, 1);
+  const x = (timestamp) => {
+    const ratio = Math.min(Math.max((Number(timestamp) - domainStart) / timeSpanSeconds, 0), 1);
+    return pad.left + ratio * plotWidth;
+  };
   const y = (value) => pad.top + ((maximum - value) / (maximum - minimum)) * plotHeight;
 
   const temperaturePath = points
-    .map((point, index) => `${index ? "L" : "M"}${x(index).toFixed(2)},${y(Number(point.refrigeratorValue)).toFixed(2)}`)
+    .map((point, index) => `${index ? "L" : "M"}${x(point.receivedAt).toFixed(2)},${y(Number(point.refrigeratorValue)).toFixed(2)}`)
     .join(" ");
   const targetPath = points
-    .map((point, index) => `${index ? "L" : "M"}${x(index).toFixed(2)},${y(Number(point.setpoint)).toFixed(2)}`)
+    .map((point, index) => `${index ? "L" : "M"}${x(point.receivedAt).toFixed(2)},${y(Number(point.setpoint)).toFixed(2)}`)
     .join(" ");
 
   temperaturePathElement.setAttribute("d", temperaturePath);
@@ -2008,17 +2131,28 @@ function renderTemperatureChart(points, graph) {
     addSvgText(labels, 2, gridY + 4, `${value.toFixed(1)}°`, "chart-grid-text");
   }
 
-  const timeIndexes = [0, Math.floor((points.length - 1) / 2), points.length - 1];
-  for (const index of timeIndexes) {
+  const timeTicks = [domainStart, domainStart + timeSpanSeconds / 2, domainEnd];
+  for (const [index, timestamp] of timeTicks.entries()) {
     addSvgText(
       labels,
-      x(index),
+      x(timestamp),
       height - 8,
-      formatTime(points[index].receivedAt),
+      formatTemperatureAxisTime(timestamp, timeSpanSeconds),
       "chart-grid-text",
-      index === 0 ? "start" : index === points.length - 1 ? "end" : "middle",
+      index === 0 ? "start" : index === timeTicks.length - 1 ? "end" : "middle",
     );
   }
+}
+
+function formatTemperatureAxisTime(epochSeconds, spanSeconds) {
+  const date = new Date(Number(epochSeconds) * 1000);
+  if (Number.isNaN(date.getTime())) return "—";
+  const options = spanSeconds <= 120
+    ? { hour: "2-digit", minute: "2-digit", second: "2-digit" }
+    : spanSeconds <= 86_400
+      ? { hour: "2-digit", minute: "2-digit" }
+      : { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" };
+  return new Intl.DateTimeFormat("pt-BR", options).format(date);
 }
 
 function renderGravityChart(fermentation) {
@@ -2200,16 +2334,28 @@ function startTimers() {
   clearTimers();
   state.uiTimer = window.setInterval(updateTimeSensitiveUi, 1_000);
   state.refreshTimer = window.setInterval(() => void refreshLatest(), 2_000);
-  state.historyTimer = window.setInterval(() => void refreshSupportingData(), 30_000);
+  scheduleHistoryRefresh();
+  state.supportingTimer = window.setInterval(() => void refreshSupportingData(), 30_000);
+}
+
+function scheduleHistoryRefresh() {
+  if (state.historyTimer) window.clearInterval(state.historyTimer);
+  state.historyTimer = null;
+  if (state.chartPaused) return;
+  const rangeSeconds = state.historyRange === "all" ? Number.POSITIVE_INFINITY : Number(state.historyRange);
+  const interval = rangeSeconds <= 60 ? 5_000 : rangeSeconds <= 300 ? 10_000 : 30_000;
+  state.historyTimer = window.setInterval(() => void refreshHistory(), interval);
 }
 
 function clearTimers() {
   if (state.uiTimer) window.clearInterval(state.uiTimer);
   if (state.refreshTimer) window.clearInterval(state.refreshTimer);
   if (state.historyTimer) window.clearInterval(state.historyTimer);
+  if (state.supportingTimer) window.clearInterval(state.supportingTimer);
   state.uiTimer = null;
   state.refreshTimer = null;
   state.historyTimer = null;
+  state.supportingTimer = null;
 }
 
 async function api(path, options = {}) {

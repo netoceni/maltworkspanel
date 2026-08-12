@@ -686,6 +686,31 @@ input:focus-visible {
   padding-left: 8px;
 }
 
+.admin-access-link {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid #637337;
+  border-radius: 8px;
+  color: #dce9a9;
+  background: linear-gradient(145deg, rgb(99 115 55 / 20%), rgb(30 37 22 / 50%));
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-decoration: none;
+  transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.admin-access-link:hover {
+  border-color: #a3bb4d;
+  color: #f0f7ce;
+  transform: translateY(-1px);
+}
+
+.admin-access-link > span { color: #b8d552; }
+
 .user-block > span:last-child {
   display: grid;
   gap: 1px;
@@ -1218,6 +1243,60 @@ input:focus-visible {
   color: var(--ink);
   background: var(--gold);
 }
+
+.range-control button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.chart-heading-actions,
+.history-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.chart-live-status {
+  color: #68c38e;
+  font-family: var(--mono);
+  font-size: 0.59rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.chart-live-status.paused { color: var(--gold-bright); }
+
+.chart-pause-button[aria-pressed="true"] {
+  border-color: rgb(203 154 63 / 60%);
+  color: var(--gold-bright);
+  background: rgb(203 154 63 / 9%);
+}
+
+.temperature-range-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.temperature-range-toolbar > span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.temperature-range-control {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+
+.temperature-range-control button { white-space: nowrap; }
 
 .legend {
   display: flex;
@@ -2044,12 +2123,6 @@ input:focus-visible {
 .switch-grid input { accent-color: var(--gold); }
 .alarm-values-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
-.history-actions {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
 .history-actions .secondary-button { min-height: 36px; }
 
 /* Dashboard e acompanhamento de densidade — Painel 5.9.0 */
@@ -2362,6 +2435,14 @@ input:focus-visible {
   .fermentation-start-grid { grid-template-columns: 1fr; }
   .fermentation-start-grid label:first-child { grid-column: auto; }
   .history-actions { align-items: stretch; flex-direction: column; }
+  .chart-heading-actions { justify-content: flex-start; }
+  .temperature-range-toolbar { align-items: stretch; flex-direction: column; }
+  .temperature-range-control {
+    align-self: stretch;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+  }
   .tab-note { flex-direction: column; gap: 7px; }
   .gravity-heading { gap: 18px; }
   .gravity-heading-actions { align-items: stretch; flex-direction: column; }

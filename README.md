@@ -1,4 +1,4 @@
-# Maltworks Cloud Panel — Fase 5.7.0
+# Maltworks Cloud Panel — Fase 5.10.0
 
 Painel web responsivo para os controladores Maltworks, preparado para
 Cloudflare Pages e integrado à API oficial em `https://api.maltworks.com.br`.
@@ -6,6 +6,8 @@ Cloudflare Pages e integrado à API oficial em `https://api.maltworks.com.br`.
 ## Recursos
 
 - login por sessão segura e cookie HttpOnly;
+- acesso ao painel ADMIN exibido somente para contas autorizadas pelo sistema,
+  sem alterar o papel da conta dentro da organização do cliente;
 - múltiplos controladores por organização;
 - temperatura, setpoint, histerese, relés e sinal Wi-Fi;
 - perfil de fermentação, alarmes e dados do dispositivo;
@@ -35,9 +37,9 @@ Cloudflare Pages e integrado à API oficial em `https://api.maltworks.com.br`.
 - acompanhamento cloud de OG e leituras manuais de densidade;
 - gráfico de fermentação, atenuação aparente e ABV estimado;
 - correção e encerramento do acompanhamento de cada lote;
-- compatibilidade com API 5.4.0 e firmware 5.2.0;
+- compatibilidade com API 5.7.0 e firmware 5.2.0;
 - correção da navegação por abas com inicialização independente da API;
-- arquivos JavaScript e CSS exclusivos da versão 5.7.0 para impedir mistura
+- arquivos JavaScript e CSS exclusivos da versão 5.10.0 para impedir mistura
   com recursos antigos mantidos pelo navegador ou pela CDN.
 
 ## Desenvolvimento
