@@ -475,6 +475,62 @@ input:focus-visible {
   text-transform: none;
 }
 
+.delete-device-dialog {
+  border-color: rgb(219 112 95 / 58%);
+}
+
+.danger-eyebrow { color: #ef9a8d; }
+
+.delete-device-summary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 2%);
+}
+
+.delete-device-summary span {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.delete-device-summary b,
+.delete-device-summary strong {
+  overflow-wrap: anywhere;
+  color: var(--cream);
+  text-align: right;
+}
+
+.delete-device-summary strong,
+.delete-device-dialog input {
+  font-family: var(--mono);
+  text-transform: uppercase;
+}
+
+.delete-device-warning {
+  padding: 14px;
+  border-left: 3px solid var(--red);
+  color: #d8c5bd;
+  background: rgb(219 112 95 / 8%);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.delete-device-actions {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.delete-device-actions button { min-height: 48px; }
+
 .device-heading-actions {
   display: flex;
   align-items: center;
@@ -1776,7 +1832,7 @@ input:focus-visible {
 
 .toast.show { opacity: 1; transform: translateY(0); }
 
-/* Navegação por abas — Painel 5.8.0 */
+/* Navegação por abas — Painel 5.9.0 */
 .dashboard-tabs {
   display: flex;
   overflow-x: auto;
@@ -1996,7 +2052,7 @@ input:focus-visible {
 
 .history-actions .secondary-button { min-height: 36px; }
 
-/* Dashboard e acompanhamento de densidade — Painel 5.8.0 */
+/* Dashboard e acompanhamento de densidade — Painel 5.9.0 */
 .profile-progress-block {
   margin-top: 20px;
   padding-top: 16px;
@@ -2110,6 +2166,39 @@ input:focus-visible {
 }
 
 .danger-button:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.device-danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid rgb(219 112 95 / 34%);
+  border-radius: 14px;
+  background: rgb(219 112 95 / 5%);
+}
+
+.device-danger-zone div {
+  display: grid;
+  gap: 6px;
+}
+
+.device-danger-zone b {
+  color: #ef9a8d;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
+.device-danger-zone span {
+  max-width: 700px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.device-danger-zone .danger-button { flex: 0 0 auto; }
 
 .gravity-metrics-grid {
   display: grid;
@@ -2315,6 +2404,8 @@ input:focus-visible {
 }
 
 @media (max-width: 640px) {
+  .delete-device-actions { grid-template-columns: 1fr; }
+  .device-danger-zone { align-items: stretch; flex-direction: column; }
   .signup-grid { grid-template-columns: 1fr; gap: 0; }
   .topbar { height: 66px; padding: 0 14px; }
   .topbar .brand small { display: none; }

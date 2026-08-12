@@ -62,6 +62,10 @@ function cacheElements() {
     "claimLoginHint", "openClaimButton", "claimDialog", "closeClaimButton", "claimForm",
     "claimRegistrationToken", "claimDeviceName", "claimError",
     "claimSubmitButton", "claimSuccess", "claimSuccessCloseButton",
+    "deleteDeviceDialog", "deleteDeviceForm", "closeDeleteDeviceButton",
+    "cancelDeleteDeviceButton", "deleteDeviceName", "deleteDeviceId",
+    "deleteDeviceConfirmation", "deleteDeviceError", "deleteDeviceSubmitButton",
+    "openDeleteDeviceButton", "deleteDeviceZone",
     "userName", "organizationName", "deviceCount", "deviceList", "deviceName",
     "emptyDeviceView", "emptyClaimButton",
     "deviceStatus", "deviceMeta", "lastUpdate", "refrigeratorTemperature",
@@ -131,6 +135,13 @@ function bindEvents() {
     if (event.target === elements.claimDialog) closeClaimDialog();
   });
   elements.claimRegistrationToken.addEventListener("input", formatRegistrationTokenInput);
+  elements.openDeleteDeviceButton.addEventListener("click", openDeleteDeviceDialog);
+  elements.closeDeleteDeviceButton.addEventListener("click", closeDeleteDeviceDialog);
+  elements.cancelDeleteDeviceButton.addEventListener("click", closeDeleteDeviceDialog);
+  elements.deleteDeviceForm.addEventListener("submit", handleDeviceDelete);
+  elements.deleteDeviceDialog.addEventListener("click", (event) => {
+    if (event.target === elements.deleteDeviceDialog) closeDeleteDeviceDialog();
+  });
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.refreshButton.addEventListener("click", () => void refreshAll(true));
   elements.togglePassword.addEventListener("click", togglePasswordVisibility);
@@ -400,6 +411,65 @@ async function handleDeviceClaim(event) {
   }
 }
 
+function openDeleteDeviceDialog() {
+  const device = state.devices.find((item) => item.id === state.selectedDeviceId);
+  if (!device) {
+    showToast("Selecione um controlador para excluir.");
+    return;
+  }
+  setDeleteDeviceError("");
+  setDeleteDeviceBusy(false);
+  elements.deleteDeviceName.textContent = device.name;
+  elements.deleteDeviceId.textContent = device.id;
+  elements.deleteDeviceConfirmation.value = "";
+  if (!elements.deleteDeviceDialog.open) elements.deleteDeviceDialog.showModal();
+  window.setTimeout(() => elements.deleteDeviceConfirmation.focus(), 0);
+}
+
+function closeDeleteDeviceDialog() {
+  if (elements.deleteDeviceDialog.open) elements.deleteDeviceDialog.close();
+}
+
+async function handleDeviceDelete(event) {
+  event.preventDefault();
+  const deviceId = state.selectedDeviceId;
+  if (!deviceId) return;
+
+  const confirmation = elements.deleteDeviceConfirmation.value.trim().toUpperCase();
+  if (confirmation !== deviceId) {
+    setDeleteDeviceError(`Digite ${deviceId} exatamente como mostrado.`);
+    elements.deleteDeviceConfirmation.focus();
+    return;
+  }
+
+  setDeleteDeviceError("");
+  setDeleteDeviceBusy(true);
+  try {
+    await api(`/v1/devices/${encodeURIComponent(deviceId)}`, {
+      method: "DELETE",
+      body: { confirmDeviceId: confirmation },
+    });
+    closeDeleteDeviceDialog();
+    state.selectedDeviceId = null;
+    state.latest = null;
+    state.history = [];
+    state.fermentation = null;
+    removeLocalPreference("mw_selected_device");
+    await loadDevices();
+    showToast("Controlador excluído. Ele já pode ser cadastrado novamente.");
+  } catch (error) {
+    if (isAuthenticationError(error)) {
+      closeDeleteDeviceDialog();
+      showLogin();
+      setLoginError("Sua sessão expirou. Entre novamente.");
+      return;
+    }
+    setDeleteDeviceError(humanError(error, "Não foi possível excluir o controlador."));
+  } finally {
+    setDeleteDeviceBusy(false);
+  }
+}
+
 async function handleSignup(event) {
   event.preventDefault();
   setSignupError("");
@@ -608,6 +678,8 @@ async function loadFermentation() {
 function renderUser() {
   elements.userName.textContent = state.user?.displayName || state.user?.email || "Usuário";
   elements.organizationName.textContent = state.user?.memberships?.[0]?.organizationName || "Maltworks";
+  const role = state.user?.memberships?.[0]?.role;
+  elements.deleteDeviceZone.hidden = !["owner", "admin"].includes(role);
 }
 
 function renderDeviceList() {
@@ -2243,6 +2315,20 @@ function setClaimError(message) {
   elements.claimError.hidden = !message;
 }
 
+function setDeleteDeviceBusy(busy) {
+  elements.deleteDeviceSubmitButton.disabled = busy;
+  elements.cancelDeleteDeviceButton.disabled = busy;
+  elements.closeDeleteDeviceButton.disabled = busy;
+  elements.deleteDeviceSubmitButton.firstElementChild.textContent = busy
+    ? "EXCLUINDO…"
+    : "EXCLUIR DEFINITIVAMENTE";
+}
+
+function setDeleteDeviceError(message) {
+  elements.deleteDeviceError.textContent = message;
+  elements.deleteDeviceError.hidden = !message;
+}
+
 function formatRegistrationToken(value) {
   const compact = String(value).replace(/[^a-z0-9]/giu, "").toUpperCase().slice(0, 30);
   if (!compact) return "";
@@ -2280,6 +2366,14 @@ function readLocalPreference(key) {
 function writeLocalPreference(key, value) {
   try {
     window.localStorage.setItem(key, value);
+  } catch {
+    // Preferências locais são opcionais e nunca devem bloquear o painel.
+  }
+}
+
+function removeLocalPreference(key) {
+  try {
+    window.localStorage.removeItem(key);
   } catch {
     // Preferências locais são opcionais e nunca devem bloquear o painel.
   }
