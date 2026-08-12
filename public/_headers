@@ -1,5 +1,5 @@
 /*
-  Content-Security-Policy: default-src 'self'; connect-src 'self' https://api.maltworks.com.br; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; connect-src 'self' https://api.maltworks.com.br http://127.0.0.1:8787 http://localhost:8787; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
@@ -9,8 +9,8 @@
 /index.html
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
-/app-5.7.0.js
+/app-5.9.0.js
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
-/styles-5.7.0.css
+/styles-5.9.0.css
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0

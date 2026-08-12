@@ -7,7 +7,7 @@
     <meta name="description" content="Painel de monitoramento e controle seguro dos controladores Maltworks." />
     <title>Maltworks Cloud</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles-5.7.0.css" />
+    <link rel="stylesheet" href="/styles-5.9.0.css" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -36,6 +36,10 @@
           <p class="eyebrow">ÁREA DO PROPRIETÁRIO</p>
           <h2>Bem-vindo de volta</h2>
           <p class="form-intro">Entre para acessar seus controladores.</p>
+          <div id="claimLoginHint" class="claim-login-hint" hidden>
+            <b>CONTROLADOR PRONTO PARA VINCULAR</b>
+            <span>Entre na sua conta para concluir a instalação.</span>
+          </div>
           <label for="email">E-mail</label>
           <input id="email" name="email" type="email" autocomplete="username" placeholder="voce@exemplo.com" required />
           <label for="password">Senha</label>
@@ -47,9 +51,49 @@
           <button id="loginButton" class="button button-primary" type="submit"><span>ENTRAR NO PAINEL</span><span aria-hidden="true">→</span></button>
           <p class="security-note"><span aria-hidden="true">◆</span> Conexão protegida e dados isolados por organização</p>
           <div class="sales-callout">
-            <span>Ainda não é cliente?</span>
-            <button id="openContactButton" type="button">CONHEÇA O MALTWORKS</button>
+            <span>Ainda não tem uma conta?</span>
+            <button id="showSignupButton" type="button">CRIAR CONTA</button>
           </div>
+        </form>
+
+        <form id="signupForm" class="login-card signup-card" hidden>
+          <div class="mobile-brand brand">
+            <span class="brand-mark" aria-hidden="true"><i></i></span>
+            <span><b>MALTWORKS</b><small>CLOUD</small></span>
+          </div>
+          <p class="eyebrow">PRIMEIRO ACESSO</p>
+          <h2>Crie sua conta</h2>
+          <p class="form-intro">Cadastre-se antes de adicionar seu controlador.</p>
+
+          <label for="signupName">Nome completo</label>
+          <input id="signupName" name="displayName" type="text" autocomplete="name" minlength="3" maxlength="100" required />
+
+          <div class="signup-grid">
+            <label for="signupBirthDate">Data de nascimento
+              <input id="signupBirthDate" name="birthDate" type="date" autocomplete="bday" required />
+            </label>
+            <label for="signupPhone">Celular (opcional)
+              <input id="signupPhone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="24" placeholder="(11) 99999-9999" />
+            </label>
+          </div>
+
+          <label for="signupEmail">E-mail</label>
+          <input id="signupEmail" name="email" type="email" autocomplete="email" maxlength="254" required />
+
+          <label for="signupPassword">Senha</label>
+          <input id="signupPassword" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="Mínimo de 12 caracteres" required />
+
+          <label for="signupPasswordConfirm">Confirmar senha</label>
+          <input id="signupPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+
+          <label class="contact-consent" for="signupTerms">
+            <input id="signupTerms" name="termsAccepted" type="checkbox" required />
+            <span>Confirmo que tenho pelo menos 18 anos e aceito os termos de uso e a política de privacidade.</span>
+          </label>
+
+          <div id="signupError" class="form-error" role="alert" hidden></div>
+          <button id="signupButton" class="button button-primary" type="submit"><span>CRIAR MINHA CONTA</span><span aria-hidden="true">→</span></button>
+          <div class="sales-callout"><span>Já possui uma conta?</span><button id="showLoginButton" type="button">ENTRAR</button></div>
         </form>
       </div>
     </section>
@@ -95,6 +139,62 @@
       </div>
     </dialog>
 
+    <dialog id="claimDialog" class="contact-dialog claim-dialog" aria-labelledby="claimTitle">
+      <div class="contact-card">
+        <button id="closeClaimButton" class="contact-close" type="button" aria-label="Fechar">×</button>
+        <form id="claimForm">
+          <p class="eyebrow">NOVO CONTROLADOR</p>
+          <h2 id="claimTitle">Vincular à sua conta</h2>
+          <p class="form-intro">Digite o código mostrado pelo controlador depois que ele se conectar ao Wi-Fi.</p>
+
+          <label for="claimRegistrationToken">Código de cadastro</label>
+          <input id="claimRegistrationToken" name="registrationToken" type="text" inputmode="text" autocomplete="one-time-code" minlength="35" maxlength="35" placeholder="MW-000000000000-XXXX-XXXX-XXXX-XXXX" required />
+
+          <label for="claimDeviceName">Nome do controlador</label>
+          <input id="claimDeviceName" name="name" type="text" autocomplete="off" minlength="2" maxlength="80" placeholder="Ex.: Câmara de fermentação" required />
+
+          <p class="claim-security-note">Este código é exclusivo do equipamento. O token interno usado pelo firmware nunca é exibido nem enviado ao navegador.</p>
+          <div id="claimError" class="form-error" role="alert" hidden></div>
+          <button id="claimSubmitButton" class="button button-primary" type="submit"><span>CADASTRAR CONTROLADOR</span><span aria-hidden="true">→</span></button>
+        </form>
+
+        <div id="claimSuccess" class="contact-success" role="status" hidden>
+          <span class="contact-success-mark" aria-hidden="true">✓</span>
+          <p class="eyebrow">CONTROLADOR VINCULADO</p>
+          <h2>Instalação concluída.</h2>
+          <p>O controlador já pertence à sua conta Maltworks.</p>
+          <button id="claimSuccessCloseButton" class="button button-primary" type="button"><span>ABRIR CONTROLADOR</span><span aria-hidden="true">→</span></button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="deleteDeviceDialog" class="contact-dialog delete-device-dialog" aria-labelledby="deleteDeviceTitle">
+      <div class="contact-card">
+        <button id="closeDeleteDeviceButton" class="contact-close" type="button" aria-label="Fechar">×</button>
+        <form id="deleteDeviceForm">
+          <p class="eyebrow danger-eyebrow">ZONA DE PERIGO</p>
+          <h2 id="deleteDeviceTitle">Excluir controlador?</h2>
+          <p class="form-intro">Esta ação apaga permanentemente os dados deste equipamento no Maltworks Cloud.</p>
+
+          <div class="delete-device-summary">
+            <span>Controlador</span><b id="deleteDeviceName">—</b>
+            <span>Device ID</span><strong id="deleteDeviceId">—</strong>
+          </div>
+
+          <p class="delete-device-warning">Serão removidos histórico, fermentações, comandos e configurações cloud. O ESP continuará funcionando localmente e reaparecerá pronto para um novo cadastro.</p>
+
+          <label for="deleteDeviceConfirmation">Digite o Device ID para confirmar</label>
+          <input id="deleteDeviceConfirmation" name="confirmDeviceId" type="text" autocomplete="off" spellcheck="false" placeholder="MW-000000000000" required />
+
+          <div id="deleteDeviceError" class="form-error" role="alert" hidden></div>
+          <div class="delete-device-actions">
+            <button id="cancelDeleteDeviceButton" class="secondary-button" type="button">CANCELAR</button>
+            <button id="deleteDeviceSubmitButton" class="danger-button" type="submit"><span>EXCLUIR DEFINITIVAMENTE</span></button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
     <div id="appView" class="app-shell" hidden>
       <header class="topbar">
         <div class="brand">
@@ -112,17 +212,28 @@
       <aside class="sidebar">
         <div class="sidebar-title"><span>CONTROLADORES</span><b id="deviceCount">0</b></div>
         <nav id="deviceList" class="device-list" aria-label="Controladores"></nav>
-        <div class="sidebar-foot"><span>API</span><b>5.4.0</b><span>PAINEL</span><b>5.7.0</b></div>
+        <div class="sidebar-foot"><span>API</span><b>5.6.0</b><span>PAINEL</span><b>5.9.0</b></div>
       </aside>
 
       <main class="dashboard">
+        <section id="emptyDeviceView" class="empty-device-view" hidden>
+          <div class="empty-device-mark" aria-hidden="true">M</div>
+          <p class="eyebrow">PRIMEIRO CONTROLADOR</p>
+          <h1>Cadastre seu Maltworks</h1>
+          <p>Sua conta está pronta. Conecte o controlador ao Wi-Fi, anote o código exibido e cadastre o equipamento aqui.</p>
+          <ol><li>Ligue o controlador.</li><li>Conecte-o ao Wi-Fi do local.</li><li>Digite o código completo exibido pelo equipamento.</li></ol>
+          <button id="emptyClaimButton" class="button button-primary" type="button"><span>CADASTRAR CONTROLADOR</span><span aria-hidden="true">→</span></button>
+        </section>
         <section class="device-heading">
           <div>
             <p class="eyebrow">CONTROLADOR SELECIONADO</p>
             <div class="title-line"><h1 id="deviceName">Controlador</h1><span id="deviceStatus" class="status-pill neutral"><i></i><span>AGUARDANDO</span></span></div>
             <p id="deviceMeta" class="device-meta">—</p>
           </div>
-          <div class="last-update"><span>ÚLTIMA ATUALIZAÇÃO</span><b id="lastUpdate">—</b></div>
+          <div class="device-heading-actions">
+            <button id="openClaimButton" class="secondary-button" type="button">+ CADASTRAR CONTROLADOR</button>
+            <div class="last-update"><span>ÚLTIMA ATUALIZAÇÃO</span><b id="lastUpdate">—</b></div>
+          </div>
         </section>
 
         <nav id="dashboardTabs" class="dashboard-tabs" role="tablist" aria-label="Seções do painel">
@@ -364,6 +475,10 @@
             </article>
           </section>
           <aside class="tab-note warning-note"><b>CONFIGURAÇÃO LOCAL DE EMERGÊNCIA</b><span>Wi‑Fi, endereço cloud e atualização OTA permanecem disponíveis na interface local do controlador. Isso evita perder o acesso ao dispositivo por uma configuração remota incorreta. OTA cloud será habilitada somente com firmware assinado.</span></aside>
+          <aside id="deleteDeviceZone" class="device-danger-zone">
+            <div><b>EXCLUIR CONTROLADOR</b><span>Remove o vínculo e todos os dados deste equipamento no Cloud para permitir um cadastro do zero.</span></div>
+            <button id="openDeleteDeviceButton" class="danger-button" type="button">EXCLUIR CONTROLADOR</button>
+          </aside>
         </section>
 
         <footer class="dashboard-footer"><span>MALTWORKS CLOUD</span><span>CONTROLE CRÍTICO EXECUTADO LOCALMENTE NO ESP32</span></footer>
@@ -371,6 +486,6 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app-5.7.0.js" defer></script>
+    <script src="/app-5.9.0.js" defer></script>
   </body>
 </html>

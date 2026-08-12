@@ -1,6 +1,8 @@
 "use strict";
 
-const API_BASE = "https://api.maltworks.com.br";
+const API_BASE = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+  ? "http://127.0.0.1:8787"
+  : "https://api.maltworks.com.br";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const state = {
@@ -31,6 +33,7 @@ const state = {
   pendingConfigurationCommandId: null,
   pendingConfigurationScope: null,
   activeTab: "dashboard",
+  pendingClaim: null,
 };
 
 const elements = {};
@@ -50,10 +53,21 @@ function cacheElements() {
   for (const id of [
     "loginView", "appView", "loginForm", "email", "password", "togglePassword",
     "loginError", "loginButton", "logoutButton", "refreshButton", "globalStatus",
-    "openContactButton", "contactDialog", "closeContactButton", "contactForm",
+    "signupForm", "signupName", "signupBirthDate", "signupPhone", "signupEmail",
+    "signupPassword", "signupPasswordConfirm", "signupTerms", "signupError",
+    "signupButton", "showSignupButton", "showLoginButton",
+    "contactDialog", "closeContactButton", "contactForm",
     "contactName", "contactEmail", "contactPhone", "contactWebsite", "contactConsent",
     "contactError", "contactSubmitButton", "contactSuccess", "contactSuccessCloseButton",
+    "claimLoginHint", "openClaimButton", "claimDialog", "closeClaimButton", "claimForm",
+    "claimRegistrationToken", "claimDeviceName", "claimError",
+    "claimSubmitButton", "claimSuccess", "claimSuccessCloseButton",
+    "deleteDeviceDialog", "deleteDeviceForm", "closeDeleteDeviceButton",
+    "cancelDeleteDeviceButton", "deleteDeviceName", "deleteDeviceId",
+    "deleteDeviceConfirmation", "deleteDeviceError", "deleteDeviceSubmitButton",
+    "openDeleteDeviceButton", "deleteDeviceZone",
     "userName", "organizationName", "deviceCount", "deviceList", "deviceName",
+    "emptyDeviceView", "emptyClaimButton",
     "deviceStatus", "deviceMeta", "lastUpdate", "refrigeratorTemperature",
     "setpointValue", "hysteresisValue", "thermalWellTemperature", "thermalWellStatus",
     "controlState", "coolingRelay", "heatingRelay", "rssiValue", "signalMeter",
@@ -102,12 +116,31 @@ function cacheElements() {
 
 function bindEvents() {
   elements.loginForm.addEventListener("submit", handleLogin);
-  elements.openContactButton.addEventListener("click", openContactDialog);
+  elements.signupForm.addEventListener("submit", handleSignup);
+  elements.showSignupButton.addEventListener("click", showSignup);
+  elements.showLoginButton.addEventListener("click", showLogin);
+  elements.openContactButton?.addEventListener("click", openContactDialog);
   elements.closeContactButton.addEventListener("click", closeContactDialog);
   elements.contactSuccessCloseButton.addEventListener("click", closeContactDialog);
   elements.contactForm.addEventListener("submit", handleContactSubmit);
   elements.contactDialog.addEventListener("click", (event) => {
     if (event.target === elements.contactDialog) closeContactDialog();
+  });
+  elements.openClaimButton.addEventListener("click", () => openClaimDialog());
+  elements.emptyClaimButton.addEventListener("click", () => openClaimDialog());
+  elements.closeClaimButton.addEventListener("click", closeClaimDialog);
+  elements.claimSuccessCloseButton.addEventListener("click", closeClaimDialog);
+  elements.claimForm.addEventListener("submit", handleDeviceClaim);
+  elements.claimDialog.addEventListener("click", (event) => {
+    if (event.target === elements.claimDialog) closeClaimDialog();
+  });
+  elements.claimRegistrationToken.addEventListener("input", formatRegistrationTokenInput);
+  elements.openDeleteDeviceButton.addEventListener("click", openDeleteDeviceDialog);
+  elements.closeDeleteDeviceButton.addEventListener("click", closeDeleteDeviceDialog);
+  elements.cancelDeleteDeviceButton.addEventListener("click", closeDeleteDeviceDialog);
+  elements.deleteDeviceForm.addEventListener("submit", handleDeviceDelete);
+  elements.deleteDeviceDialog.addEventListener("click", (event) => {
+    if (event.target === elements.deleteDeviceDialog) closeDeleteDeviceDialog();
   });
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.refreshButton.addEventListener("click", () => void refreshAll(true));
@@ -199,6 +232,8 @@ function selectTab(requestedTab) {
 }
 
 async function restoreSession() {
+  state.pendingClaim = readClaimFromUrl();
+  renderClaimLoginHint();
   try {
     const response = await api("/v1/me");
     state.user = response.user;
@@ -304,13 +339,198 @@ async function enterDashboard() {
   }
   selectTab(state.activeTab);
   startTimers();
+  if (state.pendingClaim) openClaimDialog(state.pendingClaim);
+}
+
+function readClaimFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const registrationToken = formatRegistrationToken(
+    params.get("registrationToken") || "",
+  );
+  if (!registrationToken) return null;
+  return { registrationToken };
+}
+
+function renderClaimLoginHint() {
+  elements.claimLoginHint.hidden = !state.pendingClaim;
+}
+
+function openClaimDialog(claim = null) {
+  const source = claim || state.pendingClaim;
+  elements.claimForm.hidden = false;
+  elements.claimSuccess.hidden = true;
+  setClaimError("");
+  setClaimBusy(false);
+  if (source) {
+    elements.claimRegistrationToken.value = formatRegistrationToken(source.registrationToken || "");
+  }
+  if (!elements.claimDeviceName.value) elements.claimDeviceName.value = "Controlador Maltworks";
+  if (!elements.claimDialog.open) elements.claimDialog.showModal();
+  window.setTimeout(() => {
+    const firstEmpty = [elements.claimRegistrationToken, elements.claimDeviceName]
+      .find((field) => !field.value.trim());
+    (firstEmpty || elements.claimDeviceName).focus();
+    elements.claimDeviceName.select();
+  }, 0);
+}
+
+function closeClaimDialog() {
+  if (elements.claimDialog.open) elements.claimDialog.close();
+}
+
+async function handleDeviceClaim(event) {
+  event.preventDefault();
+  setClaimError("");
+  setClaimBusy(true);
+
+  const registrationToken = elements.claimRegistrationToken.value.trim().toUpperCase();
+  const name = elements.claimDeviceName.value.trim();
+
+  try {
+    const response = await api("/v1/devices/claim", {
+      method: "POST",
+      body: { registrationToken, name },
+    });
+    state.pendingClaim = null;
+    clearClaimFromUrl();
+    renderClaimLoginHint();
+    state.selectedDeviceId = response.device.id;
+    writeLocalPreference("mw_selected_device", state.selectedDeviceId);
+    await loadDevices();
+    await Promise.all([loadLatest(), loadHistory(false), loadFermentation()]);
+    elements.claimForm.hidden = true;
+    elements.claimSuccess.hidden = false;
+    elements.claimSuccessCloseButton.focus();
+  } catch (error) {
+    const fallback = error instanceof AppError && error.code === "REGISTRATION_TOKEN_NOT_FOUND"
+      ? "Código ainda não encontrado. Confirme o Wi-Fi do controlador, aguarde alguns segundos e tente novamente."
+      : "Não foi possível vincular o controlador.";
+    setClaimError(humanError(error, fallback));
+  } finally {
+    setClaimBusy(false);
+  }
+}
+
+function openDeleteDeviceDialog() {
+  const device = state.devices.find((item) => item.id === state.selectedDeviceId);
+  if (!device) {
+    showToast("Selecione um controlador para excluir.");
+    return;
+  }
+  setDeleteDeviceError("");
+  setDeleteDeviceBusy(false);
+  elements.deleteDeviceName.textContent = device.name;
+  elements.deleteDeviceId.textContent = device.id;
+  elements.deleteDeviceConfirmation.value = "";
+  if (!elements.deleteDeviceDialog.open) elements.deleteDeviceDialog.showModal();
+  window.setTimeout(() => elements.deleteDeviceConfirmation.focus(), 0);
+}
+
+function closeDeleteDeviceDialog() {
+  if (elements.deleteDeviceDialog.open) elements.deleteDeviceDialog.close();
+}
+
+async function handleDeviceDelete(event) {
+  event.preventDefault();
+  const deviceId = state.selectedDeviceId;
+  if (!deviceId) return;
+
+  const confirmation = elements.deleteDeviceConfirmation.value.trim().toUpperCase();
+  if (confirmation !== deviceId) {
+    setDeleteDeviceError(`Digite ${deviceId} exatamente como mostrado.`);
+    elements.deleteDeviceConfirmation.focus();
+    return;
+  }
+
+  setDeleteDeviceError("");
+  setDeleteDeviceBusy(true);
+  try {
+    await api(`/v1/devices/${encodeURIComponent(deviceId)}`, {
+      method: "DELETE",
+      body: { confirmDeviceId: confirmation },
+    });
+    closeDeleteDeviceDialog();
+    state.selectedDeviceId = null;
+    state.latest = null;
+    state.history = [];
+    state.fermentation = null;
+    removeLocalPreference("mw_selected_device");
+    await loadDevices();
+    showToast("Controlador excluído. Ele já pode ser cadastrado novamente.");
+  } catch (error) {
+    if (isAuthenticationError(error)) {
+      closeDeleteDeviceDialog();
+      showLogin();
+      setLoginError("Sua sessão expirou. Entre novamente.");
+      return;
+    }
+    setDeleteDeviceError(humanError(error, "Não foi possível excluir o controlador."));
+  } finally {
+    setDeleteDeviceBusy(false);
+  }
+}
+
+async function handleSignup(event) {
+  event.preventDefault();
+  setSignupError("");
+  if (elements.signupPassword.value !== elements.signupPasswordConfirm.value) {
+    setSignupError("As senhas informadas não são iguais.");
+    elements.signupPasswordConfirm.focus();
+    return;
+  }
+
+  setSignupBusy(true);
+  const email = elements.signupEmail.value.trim();
+  try {
+    await api("/v1/auth/signup", {
+      method: "POST",
+      body: {
+        displayName: elements.signupName.value.trim(),
+        birthDate: elements.signupBirthDate.value,
+        phone: elements.signupPhone.value.trim(),
+        email,
+        password: elements.signupPassword.value,
+        termsAccepted: elements.signupTerms.checked,
+      },
+    });
+    writeLocalPreference("mw_last_email", email);
+    elements.signupPassword.value = "";
+    elements.signupPasswordConfirm.value = "";
+    const session = await api("/v1/me");
+    state.user = session.user;
+    await enterDashboard();
+    showToast("Conta criada. Cadastre seu primeiro controlador.");
+  } catch (error) {
+    setSignupError(humanError(error, "Não foi possível criar sua conta."));
+  } finally {
+    setSignupBusy(false);
+  }
+}
+
+function clearClaimFromUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("claimDevice");
+  url.searchParams.delete("pairingCode");
+  url.searchParams.delete("registrationToken");
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
 function showLogin() {
   clearTimers();
   elements.appView.hidden = true;
   elements.loginView.hidden = false;
+  elements.signupForm.hidden = true;
+  elements.loginForm.hidden = false;
   window.setTimeout(() => elements.email.focus(), 0);
+}
+
+function showSignup() {
+  setLoginError("");
+  setSignupError("");
+  elements.loginForm.hidden = true;
+  elements.signupForm.hidden = false;
+  if (!elements.signupEmail.value) elements.signupEmail.value = elements.email.value.trim();
+  window.setTimeout(() => elements.signupName.focus(), 0);
 }
 
 async function loadDevices() {
@@ -325,7 +545,12 @@ async function loadDevices() {
   }
 
   renderDeviceList();
-  if (!state.selectedDeviceId) renderNoDevices();
+  if (!state.selectedDeviceId) {
+    renderNoDevices();
+  } else {
+    document.querySelector("main.dashboard")?.classList.remove("no-devices");
+    elements.emptyDeviceView.hidden = true;
+  }
 }
 
 async function refreshAll(showConfirmation) {
@@ -453,6 +678,8 @@ async function loadFermentation() {
 function renderUser() {
   elements.userName.textContent = state.user?.displayName || state.user?.email || "Usuário";
   elements.organizationName.textContent = state.user?.memberships?.[0]?.organizationName || "Maltworks";
+  const role = state.user?.memberships?.[0]?.role;
+  elements.deleteDeviceZone.hidden = !["owner", "admin"].includes(role);
 }
 
 function renderDeviceList() {
@@ -1951,6 +2178,8 @@ function renderNoDevices() {
   state.fermentation = null;
   state.fermentationError = null;
   state.showNewFermentationForm = false;
+  document.querySelector("main.dashboard")?.classList.add("no-devices");
+  elements.emptyDeviceView.hidden = false;
   elements.deviceName.textContent = "Nenhum controlador";
   elements.deviceMeta.textContent = "Vincule um dispositivo à sua organização para começar.";
   setStatusPill(elements.deviceStatus, "neutral", "SEM DISPOSITIVOS");
@@ -2062,6 +2291,59 @@ function setContactError(message) {
   elements.contactError.hidden = !message;
 }
 
+function setSignupBusy(busy) {
+  elements.signupButton.disabled = busy;
+  elements.signupButton.firstElementChild.textContent = busy
+    ? "CRIANDO CONTA…"
+    : "CRIAR MINHA CONTA";
+}
+
+function setSignupError(message) {
+  elements.signupError.textContent = message;
+  elements.signupError.hidden = !message;
+}
+
+function setClaimBusy(busy) {
+  elements.claimSubmitButton.disabled = busy;
+  elements.claimSubmitButton.firstElementChild.textContent = busy
+    ? "CADASTRANDO…"
+    : "CADASTRAR CONTROLADOR";
+}
+
+function setClaimError(message) {
+  elements.claimError.textContent = message;
+  elements.claimError.hidden = !message;
+}
+
+function setDeleteDeviceBusy(busy) {
+  elements.deleteDeviceSubmitButton.disabled = busy;
+  elements.cancelDeleteDeviceButton.disabled = busy;
+  elements.closeDeleteDeviceButton.disabled = busy;
+  elements.deleteDeviceSubmitButton.firstElementChild.textContent = busy
+    ? "EXCLUINDO…"
+    : "EXCLUIR DEFINITIVAMENTE";
+}
+
+function setDeleteDeviceError(message) {
+  elements.deleteDeviceError.textContent = message;
+  elements.deleteDeviceError.hidden = !message;
+}
+
+function formatRegistrationToken(value) {
+  const compact = String(value).replace(/[^a-z0-9]/giu, "").toUpperCase().slice(0, 30);
+  if (!compact) return "";
+  if (compact.length <= 2 && "MW".startsWith(compact)) return compact;
+  const payload = compact.startsWith("MW") ? compact.slice(2) : compact;
+  const deviceId = payload.slice(0, 12);
+  const proof = payload.slice(12, 28);
+  const groups = proof.match(/.{1,4}/gu) || [];
+  return `MW${deviceId ? `-${deviceId}` : ""}${groups.length ? `-${groups.join("-")}` : ""}`;
+}
+
+function formatRegistrationTokenInput(event) {
+  event.currentTarget.value = formatRegistrationToken(event.currentTarget.value);
+}
+
 function togglePasswordVisibility() {
   const visible = elements.password.type === "text";
   elements.password.type = visible ? "password" : "text";
@@ -2084,6 +2366,14 @@ function readLocalPreference(key) {
 function writeLocalPreference(key, value) {
   try {
     window.localStorage.setItem(key, value);
+  } catch {
+    // Preferências locais são opcionais e nunca devem bloquear o painel.
+  }
+}
+
+function removeLocalPreference(key) {
+  try {
+    window.localStorage.removeItem(key);
   } catch {
     // Preferências locais são opcionais e nunca devem bloquear o painel.
   }
