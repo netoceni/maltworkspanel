@@ -1244,6 +1244,37 @@ input:focus-visible {
   background: var(--gold);
 }
 
+.range-control button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.chart-heading-actions,
+.history-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.chart-live-status {
+  color: #68c38e;
+  font-family: var(--mono);
+  font-size: 0.59rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.chart-live-status.paused { color: var(--gold-bright); }
+
+.chart-pause-button[aria-pressed="true"] {
+  border-color: rgb(203 154 63 / 60%);
+  color: var(--gold-bright);
+  background: rgb(203 154 63 / 9%);
+}
+
 .temperature-range-toolbar {
   display: flex;
   align-items: center;
@@ -2092,12 +2123,6 @@ input:focus-visible {
 .switch-grid input { accent-color: var(--gold); }
 .alarm-values-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
-.history-actions {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
 .history-actions .secondary-button { min-height: 36px; }
 
 /* Dashboard e acompanhamento de densidade — Painel 5.9.0 */
@@ -2410,6 +2435,7 @@ input:focus-visible {
   .fermentation-start-grid { grid-template-columns: 1fr; }
   .fermentation-start-grid label:first-child { grid-column: auto; }
   .history-actions { align-items: stretch; flex-direction: column; }
+  .chart-heading-actions { justify-content: flex-start; }
   .temperature-range-toolbar { align-items: stretch; flex-direction: column; }
   .temperature-range-control {
     align-self: stretch;
