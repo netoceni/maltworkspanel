@@ -15,16 +15,20 @@ const state = {
   selectedDeviceId: null,
   latest: null,
   history: [],
+  historyFrom: null,
+  historyTo: null,
   recipes: [],
   fermentation: null,
   fermentationError: null,
   fermentationBusy: false,
   showNewFermentationForm: false,
-  historyLimit: 240,
+  historyRange: "600",
   uiTimer: null,
   refreshTimer: null,
   historyTimer: null,
+  supportingTimer: null,
   busy: false,
+  historyBusy: false,
   supportingBusy: false,
   commandBusy: false,
   recipeBusy: false,
@@ -175,12 +179,13 @@ function bindEvents() {
   elements.calibrationForm.addEventListener("input", () => { state.calibrationDirty = true; });
   elements.alarmSettingsForm.addEventListener("input", () => { state.alarmsDirty = true; });
 
-  document.querySelectorAll("[data-limit]").forEach((button) => {
+  document.querySelectorAll("[data-temperature-range]").forEach((button) => {
     button.addEventListener("click", () => {
-      state.historyLimit = Number(button.dataset.limit);
-      document.querySelectorAll("[data-limit]").forEach((item) => {
-        item.classList.toggle("active", item === button);
+      state.historyRange = button.dataset.temperatureRange;
+      document.querySelectorAll("[data-temperature-range]").forEach((item) => {
+        item.classList.toggle("active", item.dataset.temperatureRange === state.historyRange);
       });
+      scheduleHistoryRefresh();
       void loadHistory(true);
     });
   });
@@ -606,11 +611,24 @@ async function refreshSupportingData() {
 
   try {
     await loadDevices();
-    await Promise.all([loadHistory(false), loadFermentation()]);
+    await loadFermentation();
   } catch (error) {
     handleRefreshError(error);
   } finally {
     state.supportingBusy = false;
+  }
+}
+
+async function refreshHistory() {
+  if (state.historyBusy || !state.selectedDeviceId || document.hidden) return;
+  state.historyBusy = true;
+
+  try {
+    await loadHistory(false);
+  } catch (error) {
+    handleRefreshError(error);
+  } finally {
+    state.historyBusy = false;
   }
 }
 
@@ -648,10 +666,18 @@ async function loadLatest() {
 
 async function loadHistory(showConfirmation) {
   if (!state.selectedDeviceId) return;
+  const requestedRange = state.historyRange;
   const response = await api(
-    `/v1/devices/${encodeURIComponent(state.selectedDeviceId)}/telemetry?limit=${state.historyLimit}`,
+    `/v1/devices/${encodeURIComponent(state.selectedDeviceId)}/telemetry?range=${encodeURIComponent(requestedRange)}&maxPoints=720`,
   );
+  if (requestedRange !== state.historyRange) return;
   state.history = Array.isArray(response.points) ? response.points : [];
+  state.historyFrom = response.from !== null && Number.isFinite(Number(response.from))
+    ? Number(response.from)
+    : null;
+  state.historyTo = response.to !== null && Number.isFinite(Number(response.to))
+    ? Number(response.to)
+    : null;
   renderChart();
   if (showConfirmation) showToast("Período do gráfico atualizado.");
 }
@@ -1945,7 +1971,7 @@ function renderAlarms(alarms) {
 function renderChart() {
   const points = [...state.history]
     .reverse()
-    .filter((point) => Number.isFinite(Number(point.refrigeratorValue)));
+    .filter((point) => point.refrigeratorValue !== null && Number.isFinite(Number(point.refrigeratorValue)));
 
   renderTemperatureChart(points, {
     grid: elements.chartGrid,
@@ -1954,6 +1980,8 @@ function renderChart() {
     targetPath: elements.targetPath,
     empty: elements.chartEmpty,
     height: 300,
+    startTime: state.historyFrom,
+    endTime: state.historyTo,
   });
   renderTemperatureChart(points, {
     grid: elements.dashboardChartGrid,
@@ -1962,6 +1990,8 @@ function renderChart() {
     targetPath: elements.dashboardTargetPath,
     empty: elements.dashboardChartEmpty,
     height: 260,
+    startTime: state.historyFrom,
+    endTime: state.historyTo,
   });
 }
 
@@ -1973,6 +2003,8 @@ function renderTemperatureChart(points, graph) {
     targetPath: targetPathElement,
     empty,
     height,
+    startTime,
+    endTime,
   } = graph;
   grid.replaceChildren();
   labels.replaceChildren();
@@ -1998,14 +2030,22 @@ function renderTemperatureChart(points, graph) {
 
   const plotWidth = width - pad.left - pad.right;
   const plotHeight = height - pad.top - pad.bottom;
-  const x = (index) => pad.left + (index / (points.length - 1)) * plotWidth;
+  const firstTimestamp = Number(points[0].receivedAt);
+  const lastTimestamp = Number(points[points.length - 1].receivedAt);
+  const domainStart = Number.isFinite(startTime) ? startTime : firstTimestamp;
+  const domainEnd = Number.isFinite(endTime) && endTime > domainStart ? endTime : lastTimestamp;
+  const timeSpanSeconds = Math.max(domainEnd - domainStart, 1);
+  const x = (timestamp) => {
+    const ratio = Math.min(Math.max((Number(timestamp) - domainStart) / timeSpanSeconds, 0), 1);
+    return pad.left + ratio * plotWidth;
+  };
   const y = (value) => pad.top + ((maximum - value) / (maximum - minimum)) * plotHeight;
 
   const temperaturePath = points
-    .map((point, index) => `${index ? "L" : "M"}${x(index).toFixed(2)},${y(Number(point.refrigeratorValue)).toFixed(2)}`)
+    .map((point, index) => `${index ? "L" : "M"}${x(point.receivedAt).toFixed(2)},${y(Number(point.refrigeratorValue)).toFixed(2)}`)
     .join(" ");
   const targetPath = points
-    .map((point, index) => `${index ? "L" : "M"}${x(index).toFixed(2)},${y(Number(point.setpoint)).toFixed(2)}`)
+    .map((point, index) => `${index ? "L" : "M"}${x(point.receivedAt).toFixed(2)},${y(Number(point.setpoint)).toFixed(2)}`)
     .join(" ");
 
   temperaturePathElement.setAttribute("d", temperaturePath);
@@ -2019,17 +2059,28 @@ function renderTemperatureChart(points, graph) {
     addSvgText(labels, 2, gridY + 4, `${value.toFixed(1)}°`, "chart-grid-text");
   }
 
-  const timeIndexes = [0, Math.floor((points.length - 1) / 2), points.length - 1];
-  for (const index of timeIndexes) {
+  const timeTicks = [domainStart, domainStart + timeSpanSeconds / 2, domainEnd];
+  for (const [index, timestamp] of timeTicks.entries()) {
     addSvgText(
       labels,
-      x(index),
+      x(timestamp),
       height - 8,
-      formatTime(points[index].receivedAt),
+      formatTemperatureAxisTime(timestamp, timeSpanSeconds),
       "chart-grid-text",
-      index === 0 ? "start" : index === points.length - 1 ? "end" : "middle",
+      index === 0 ? "start" : index === timeTicks.length - 1 ? "end" : "middle",
     );
   }
+}
+
+function formatTemperatureAxisTime(epochSeconds, spanSeconds) {
+  const date = new Date(Number(epochSeconds) * 1000);
+  if (Number.isNaN(date.getTime())) return "—";
+  const options = spanSeconds <= 120
+    ? { hour: "2-digit", minute: "2-digit", second: "2-digit" }
+    : spanSeconds <= 86_400
+      ? { hour: "2-digit", minute: "2-digit" }
+      : { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" };
+  return new Intl.DateTimeFormat("pt-BR", options).format(date);
 }
 
 function renderGravityChart(fermentation) {
@@ -2211,16 +2262,26 @@ function startTimers() {
   clearTimers();
   state.uiTimer = window.setInterval(updateTimeSensitiveUi, 1_000);
   state.refreshTimer = window.setInterval(() => void refreshLatest(), 2_000);
-  state.historyTimer = window.setInterval(() => void refreshSupportingData(), 30_000);
+  scheduleHistoryRefresh();
+  state.supportingTimer = window.setInterval(() => void refreshSupportingData(), 30_000);
+}
+
+function scheduleHistoryRefresh() {
+  if (state.historyTimer) window.clearInterval(state.historyTimer);
+  const rangeSeconds = state.historyRange === "all" ? Number.POSITIVE_INFINITY : Number(state.historyRange);
+  const interval = rangeSeconds <= 60 ? 5_000 : rangeSeconds <= 300 ? 10_000 : 30_000;
+  state.historyTimer = window.setInterval(() => void refreshHistory(), interval);
 }
 
 function clearTimers() {
   if (state.uiTimer) window.clearInterval(state.uiTimer);
   if (state.refreshTimer) window.clearInterval(state.refreshTimer);
   if (state.historyTimer) window.clearInterval(state.historyTimer);
+  if (state.supportingTimer) window.clearInterval(state.supportingTimer);
   state.uiTimer = null;
   state.refreshTimer = null;
   state.historyTimer = null;
+  state.supportingTimer = null;
 }
 
 async function api(path, options = {}) {

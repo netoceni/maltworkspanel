@@ -293,6 +293,21 @@
               <div><p class="eyebrow">HISTÓRICO RECENTE</p><h2>Temperatura e setpoint</h2></div>
               <button id="openHistoryButton" class="secondary-button" type="button">VER HISTÓRICO</button>
             </div>
+            <div class="temperature-range-toolbar">
+              <span>PERÍODO</span>
+              <div class="range-control temperature-range-control" role="group" aria-label="Período do gráfico no Dashboard">
+                <button type="button" data-temperature-range="15">15 S</button>
+                <button type="button" data-temperature-range="60">1 MIN</button>
+                <button type="button" data-temperature-range="300">5 MIN</button>
+                <button type="button" data-temperature-range="600" class="active">10 MIN</button>
+                <button type="button" data-temperature-range="1800">30 MIN</button>
+                <button type="button" data-temperature-range="3600">1 H</button>
+                <button type="button" data-temperature-range="14400">4 H</button>
+                <button type="button" data-temperature-range="43200">12 H</button>
+                <button type="button" data-temperature-range="86400">24 H</button>
+                <button type="button" data-temperature-range="all">DESDE O INÍCIO</button>
+              </div>
+            </div>
             <div class="legend"><span><i class="legend-temp"></i>GELADEIRA</span><span><i class="legend-target"></i>SETPOINT</span></div>
             <div class="chart-wrap dashboard-chart-wrap"><svg id="dashboardTemperatureChart" viewBox="0 0 900 260" role="img" aria-label="Gráfico recente de temperatura"><g id="dashboardChartGrid"></g><path id="dashboardTargetPath" class="chart-line target-line" d=""></path><path id="dashboardTemperaturePath" class="chart-line temperature-line" d=""></path><g id="dashboardChartLabels"></g></svg><div id="dashboardChartEmpty" class="chart-empty">Carregando histórico…</div></div>
           </section>
@@ -457,7 +472,22 @@
           <section class="chart-card tab-card-first">
             <div class="section-heading">
               <div><p class="eyebrow">HISTÓRICO TÉRMICO</p><h2>Temperatura e setpoint</h2></div>
-              <div class="history-actions"><div class="range-control" role="group" aria-label="Período do gráfico"><button type="button" data-limit="120">~30 MIN</button><button type="button" data-limit="240" class="active">~1 H</button><button type="button" data-limit="500">MÁXIMO</button></div><button id="exportHistoryButton" class="secondary-button" type="button">EXPORTAR CSV</button></div>
+              <div class="history-actions"><button id="exportHistoryButton" class="secondary-button" type="button">EXPORTAR CSV</button></div>
+            </div>
+            <div class="temperature-range-toolbar">
+              <span>PERÍODO</span>
+              <div class="range-control temperature-range-control" role="group" aria-label="Período do gráfico histórico">
+                <button type="button" data-temperature-range="15">15 S</button>
+                <button type="button" data-temperature-range="60">1 MIN</button>
+                <button type="button" data-temperature-range="300">5 MIN</button>
+                <button type="button" data-temperature-range="600" class="active">10 MIN</button>
+                <button type="button" data-temperature-range="1800">30 MIN</button>
+                <button type="button" data-temperature-range="3600">1 H</button>
+                <button type="button" data-temperature-range="14400">4 H</button>
+                <button type="button" data-temperature-range="43200">12 H</button>
+                <button type="button" data-temperature-range="86400">24 H</button>
+                <button type="button" data-temperature-range="all">DESDE O INÍCIO</button>
+              </div>
             </div>
             <div class="legend"><span><i class="legend-temp"></i>GELADEIRA</span><span><i class="legend-target"></i>SETPOINT</span></div>
             <div id="chartWrap" class="chart-wrap"><svg id="temperatureChart" viewBox="0 0 900 300" role="img" aria-label="Gráfico de temperatura"><g id="chartGrid"></g><path id="targetPath" class="chart-line target-line" d=""></path><path id="temperaturePath" class="chart-line temperature-line" d=""></path><g id="chartLabels"></g></svg><div id="chartEmpty" class="chart-empty">Carregando histórico…</div></div>

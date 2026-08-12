@@ -1244,6 +1244,29 @@ input:focus-visible {
   background: var(--gold);
 }
 
+.temperature-range-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.temperature-range-toolbar > span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.temperature-range-control {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+
+.temperature-range-control button { white-space: nowrap; }
+
 .legend {
   display: flex;
   gap: 18px;
@@ -2387,6 +2410,13 @@ input:focus-visible {
   .fermentation-start-grid { grid-template-columns: 1fr; }
   .fermentation-start-grid label:first-child { grid-column: auto; }
   .history-actions { align-items: stretch; flex-direction: column; }
+  .temperature-range-toolbar { align-items: stretch; flex-direction: column; }
+  .temperature-range-control {
+    align-self: stretch;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+  }
   .tab-note { flex-direction: column; gap: 7px; }
   .gravity-heading { gap: 18px; }
   .gravity-heading-actions { align-items: stretch; flex-direction: column; }
