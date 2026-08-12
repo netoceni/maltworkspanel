@@ -5,7 +5,7 @@ const API_BASE = ["localhost", "127.0.0.1"].includes(window.location.hostname)
   : "https://api.maltworks.com.br";
 const ADMIN_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
   ? "http://127.0.0.1:8791/"
-  : "https://admin.maltworks.com.br";
+  : "https://maltworks-admin.pages.dev/";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const state = {
