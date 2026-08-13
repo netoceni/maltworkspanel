@@ -7,7 +7,7 @@
     <meta name="description" content="Painel de monitoramento e controle seguro dos controladores Maltworks." />
     <title>Maltworks Cloud</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles-5.11.0.css" />
+    <link rel="stylesheet" href="/styles-5.12.0.css" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -230,6 +230,38 @@
           <span id="globalStatus" class="status-pill neutral"><i></i><span>CONECTANDO</span></span>
           <button id="refreshButton" class="icon-button" type="button" aria-label="Atualizar dados">↻</button>
           <a id="adminAccessLink" class="admin-access-link" href="https://admin.maltworks.com.br" target="_blank" rel="noopener" title="Abrir administração do sistema" hidden><span aria-hidden="true">◆</span><b>ADMIN</b></a>
+          <div id="notificationShell" class="notification-shell">
+            <button id="notificationButton" class="notification-button" type="button" aria-label="Abrir notificações" aria-expanded="false" aria-controls="notificationPanel">
+              <span class="notification-bell" aria-hidden="true">♢</span>
+              <b id="notificationBadge" class="notification-badge" hidden>0</b>
+            </button>
+            <aside id="notificationPanel" class="notification-panel" aria-label="Central de notificações" hidden>
+              <div class="notification-panel-head">
+                <div><p class="eyebrow">ACOMPANHAMENTO</p><h2>Notificações</h2></div>
+                <button id="closeNotificationButton" class="icon-button" type="button" aria-label="Fechar notificações">×</button>
+              </div>
+              <div class="notification-toolbar">
+                <span id="notificationUnreadLabel">Nenhuma pendência</span>
+                <button id="markAllNotificationsReadButton" type="button">MARCAR TODAS COMO LIDAS</button>
+              </div>
+              <div id="notificationList" class="notification-list"></div>
+              <p id="notificationEmpty" class="notification-empty">Nenhuma notificação por enquanto.</p>
+              <details class="notification-settings">
+                <summary>PREFERÊNCIAS DE E-MAIL</summary>
+                <form id="notificationPreferencesForm">
+                  <label class="notification-master-toggle"><input id="notificationEmailEnabled" type="checkbox" /><span>Receber notificações por e-mail</span></label>
+                  <div class="notification-preference-grid">
+                    <label><input id="notificationDeviceEvents" type="checkbox" /><span>Conexão dos controladores</span></label>
+                    <label><input id="notificationSensorEvents" type="checkbox" /><span>Falhas dos sensores</span></label>
+                    <label><input id="notificationAlarmEvents" type="checkbox" /><span>Alarmes críticos</span></label>
+                    <label><input id="notificationProfileEvents" type="checkbox" /><span>Etapas das receitas</span></label>
+                    <label><input id="notificationCommandEvents" type="checkbox" /><span>Comandos rejeitados</span></label>
+                  </div>
+                  <button id="saveNotificationPreferencesButton" class="secondary-button" type="submit">SALVAR PREFERÊNCIAS</button>
+                </form>
+              </details>
+            </aside>
+          </div>
           <div class="user-block"><span class="user-avatar" aria-hidden="true">S</span><span><b id="userName">Usuário</b><small id="organizationName">Maltworks</small></span></div>
           <button id="logoutButton" class="text-button" type="button">SAIR</button>
         </div>
@@ -238,7 +270,7 @@
       <aside class="sidebar">
         <div class="sidebar-title"><span>CONTROLADORES</span><b id="deviceCount">0</b></div>
         <nav id="deviceList" class="device-list" aria-label="Controladores"></nav>
-        <div class="sidebar-foot"><span>API</span><b>5.8.0</b><span>PAINEL</span><b>5.11.0</b></div>
+        <div class="sidebar-foot"><span>API</span><b>5.9.0</b><span>PAINEL</span><b>5.12.0</b></div>
       </aside>
 
       <main class="dashboard">
@@ -551,6 +583,6 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app-5.11.0.js" defer></script>
+    <script src="/app-5.12.0.js" defer></script>
   </body>
 </html>

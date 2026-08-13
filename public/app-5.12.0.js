@@ -51,6 +51,12 @@ const state = {
   deletingDeviceId: null,
   chartViewportStart: null,
   chartViewportEnd: null,
+  notifications: [],
+  notificationUnreadCount: 0,
+  notificationPreferences: null,
+  notificationsOpen: false,
+  notificationsBusy: false,
+  notificationTimer: null,
 };
 
 const elements = {};
@@ -70,7 +76,12 @@ function cacheElements() {
   for (const id of [
     "loginView", "appView", "loginForm", "email", "password", "togglePassword",
     "loginError", "loginButton", "logoutButton", "refreshButton", "globalStatus",
-    "adminAccessLink",
+    "adminAccessLink", "notificationShell", "notificationButton", "notificationBadge",
+    "notificationPanel", "closeNotificationButton", "notificationUnreadLabel",
+    "markAllNotificationsReadButton", "notificationList", "notificationEmpty",
+    "notificationPreferencesForm", "notificationEmailEnabled", "notificationDeviceEvents",
+    "notificationSensorEvents", "notificationAlarmEvents", "notificationProfileEvents",
+    "notificationCommandEvents", "saveNotificationPreferencesButton",
     "signupForm", "signupName", "signupBirthDate", "signupPhone", "signupEmail",
     "signupPassword", "signupPasswordConfirm", "signupTerms", "signupError",
     "signupButton", "showSignupButton", "showLoginButton",
@@ -171,6 +182,12 @@ function bindEvents() {
   });
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.refreshButton.addEventListener("click", () => void refreshAll(true));
+  elements.notificationButton.addEventListener("click", toggleNotificationPanel);
+  elements.closeNotificationButton.addEventListener("click", closeNotificationPanel);
+  elements.markAllNotificationsReadButton.addEventListener("click", () => void markAllNotificationsRead());
+  elements.notificationList.addEventListener("click", (event) => void handleNotificationClick(event));
+  elements.notificationPreferencesForm.addEventListener("submit", handleNotificationPreferencesSave);
+  elements.notificationEmailEnabled.addEventListener("change", renderNotificationPreferences);
   elements.adminAccessLink.href = ADMIN_URL;
   elements.togglePassword.addEventListener("click", togglePasswordVisibility);
   elements.setpointForm.addEventListener("submit", handleSetpointCommand);
@@ -218,9 +235,11 @@ function bindEvents() {
 
   document.addEventListener("click", (event) => {
     if (!event.target.closest?.(".device-menu-shell")) closeDeviceMenus();
+    if (state.notificationsOpen && !elements.notificationShell.contains(event.target)) closeNotificationPanel();
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && state.openDeviceMenuId) closeDeviceMenus();
+    if (event.key === "Escape" && state.notificationsOpen) closeNotificationPanel();
   });
 
   window.addEventListener("focus", () => {
@@ -372,6 +391,10 @@ async function handleLogout() {
   state.fermentation = null;
   state.fermentationError = null;
   state.latest = null;
+  state.notifications = [];
+  state.notificationUnreadCount = 0;
+  state.notificationPreferences = null;
+  closeNotificationPanel();
   showLogin();
   showToast("Sessão encerrada.");
 }
@@ -380,7 +403,7 @@ async function enterDashboard() {
   elements.loginView.hidden = true;
   elements.appView.hidden = false;
   renderUser();
-  await Promise.all([loadDevices(), loadRecipes()]);
+  await Promise.all([loadDevices(), loadRecipes(), loadNotifications(), loadNotificationPreferences()]);
   if (state.selectedDeviceId) {
     await Promise.all([loadLatest(), loadHistory(false), loadFermentation()]);
   }
@@ -702,12 +725,12 @@ async function loadDevices() {
 }
 
 async function refreshAll(showConfirmation) {
-  if (state.busy || !state.selectedDeviceId) return;
+  if (state.busy) return;
   state.busy = true;
   elements.refreshButton.classList.add("loading");
 
   try {
-    await Promise.all([loadDevices(), loadRecipes()]);
+    await Promise.all([loadDevices(), loadRecipes(), loadNotifications()]);
     if (!state.selectedDeviceId) return;
     await Promise.all([loadLatest(), loadHistory(false), loadFermentation()]);
     if (showConfirmation) showToast("Dados atualizados.");
@@ -855,6 +878,182 @@ function renderUser() {
   elements.adminAccessLink.hidden = state.capabilities.systemAdmin !== true;
   const role = state.user?.memberships?.[0]?.role;
   elements.deleteDeviceZone.hidden = !["owner", "admin"].includes(role);
+}
+
+async function loadNotifications() {
+  const response = await api("/v1/notifications?limit=40");
+  state.notifications = Array.isArray(response.notifications) ? response.notifications : [];
+  state.notificationUnreadCount = Number(response.unreadCount) || 0;
+  renderNotifications();
+}
+
+async function loadNotificationPreferences() {
+  const response = await api("/v1/notifications/preferences");
+  state.notificationPreferences = response.preferences || null;
+  renderNotificationPreferences();
+}
+
+function toggleNotificationPanel() {
+  if (state.notificationsOpen) {
+    closeNotificationPanel();
+    return;
+  }
+  state.notificationsOpen = true;
+  elements.notificationPanel.hidden = false;
+  elements.notificationButton.setAttribute("aria-expanded", "true");
+  void loadNotifications().catch((error) => {
+    showToast(humanError(error, "Não foi possível carregar as notificações."));
+  });
+}
+
+function closeNotificationPanel() {
+  state.notificationsOpen = false;
+  if (elements.notificationPanel) elements.notificationPanel.hidden = true;
+  if (elements.notificationButton) elements.notificationButton.setAttribute("aria-expanded", "false");
+}
+
+function renderNotifications() {
+  const unread = Math.max(0, state.notificationUnreadCount);
+  elements.notificationBadge.hidden = unread === 0;
+  elements.notificationBadge.textContent = unread > 99 ? "99+" : String(unread);
+  elements.notificationUnreadLabel.textContent = unread === 0
+    ? "Nenhuma pendência"
+    : `${unread} não lida${unread === 1 ? "" : "s"}`;
+  elements.markAllNotificationsReadButton.disabled = unread === 0 || state.notificationsBusy;
+  elements.notificationList.replaceChildren();
+  elements.notificationEmpty.hidden = state.notifications.length > 0;
+
+  for (const notification of state.notifications) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = `notification-item${notification.isRead ? "" : " unread"}`;
+    item.dataset.notificationId = notification.id;
+    item.dataset.deviceId = notification.deviceId || "";
+    item.dataset.severity = notification.severity || "info";
+
+    const dot = document.createElement("span");
+    dot.className = "notification-dot";
+    dot.setAttribute("aria-hidden", "true");
+    const copy = document.createElement("span");
+    copy.className = "notification-copy";
+    const title = document.createElement("b");
+    title.textContent = notification.title || "Notificação Maltworks";
+    const message = document.createElement("p");
+    message.textContent = notification.message || "";
+    const meta = document.createElement("span");
+    meta.className = "notification-meta";
+    const category = notificationCategoryLabel(notification.category);
+    meta.textContent = `${category} · ${timeAgo(notification.createdAt)}`;
+    copy.append(title, message, meta);
+    item.append(dot, copy);
+    elements.notificationList.append(item);
+  }
+}
+
+async function handleNotificationClick(event) {
+  const item = event.target.closest?.("[data-notification-id]");
+  if (!item || state.notificationsBusy) return;
+  const notification = state.notifications.find((entry) => entry.id === item.dataset.notificationId);
+  if (!notification) return;
+  state.notificationsBusy = true;
+  try {
+    if (!notification.isRead) {
+      const response = await api(`/v1/notifications/${encodeURIComponent(notification.id)}/read`, { method: "POST" });
+      notification.isRead = true;
+      state.notificationUnreadCount = Number(response.unreadCount) || 0;
+    }
+    if (notification.deviceId && state.devices.some((device) => device.id === notification.deviceId)) {
+      await selectDevice(notification.deviceId);
+    }
+    closeNotificationPanel();
+  } catch (error) {
+    showToast(humanError(error, "Não foi possível abrir a notificação."));
+  } finally {
+    state.notificationsBusy = false;
+    renderNotifications();
+  }
+}
+
+async function markAllNotificationsRead() {
+  if (state.notificationsBusy || state.notificationUnreadCount === 0) return;
+  state.notificationsBusy = true;
+  renderNotifications();
+  try {
+    await api("/v1/notifications/read-all", { method: "POST" });
+    state.notifications.forEach((notification) => { notification.isRead = true; });
+    state.notificationUnreadCount = 0;
+    showToast("Todas as notificações foram marcadas como lidas.");
+  } catch (error) {
+    showToast(humanError(error, "Não foi possível atualizar as notificações."));
+  } finally {
+    state.notificationsBusy = false;
+    renderNotifications();
+  }
+}
+
+function renderNotificationPreferences() {
+  const preferences = state.notificationPreferences || {
+    emailEnabled: false,
+    deviceEvents: true,
+    sensorEvents: true,
+    alarmEvents: true,
+    profileEvents: true,
+    commandEvents: true,
+  };
+  if (document.activeElement !== elements.notificationEmailEnabled) {
+    elements.notificationEmailEnabled.checked = preferences.emailEnabled === true;
+  }
+  elements.notificationDeviceEvents.checked = preferences.deviceEvents !== false;
+  elements.notificationSensorEvents.checked = preferences.sensorEvents !== false;
+  elements.notificationAlarmEvents.checked = preferences.alarmEvents !== false;
+  elements.notificationProfileEvents.checked = preferences.profileEvents !== false;
+  elements.notificationCommandEvents.checked = preferences.commandEvents !== false;
+  const disabled = !elements.notificationEmailEnabled.checked;
+  for (const input of [
+    elements.notificationDeviceEvents,
+    elements.notificationSensorEvents,
+    elements.notificationAlarmEvents,
+    elements.notificationProfileEvents,
+    elements.notificationCommandEvents,
+  ]) input.disabled = disabled;
+}
+
+async function handleNotificationPreferencesSave(event) {
+  event.preventDefault();
+  if (state.notificationsBusy) return;
+  state.notificationsBusy = true;
+  elements.saveNotificationPreferencesButton.disabled = true;
+  try {
+    const response = await api("/v1/notifications/preferences", {
+      method: "PUT",
+      body: {
+        emailEnabled: elements.notificationEmailEnabled.checked,
+        deviceEvents: elements.notificationDeviceEvents.checked,
+        sensorEvents: elements.notificationSensorEvents.checked,
+        alarmEvents: elements.notificationAlarmEvents.checked,
+        profileEvents: elements.notificationProfileEvents.checked,
+        commandEvents: elements.notificationCommandEvents.checked,
+      },
+    });
+    state.notificationPreferences = response.preferences;
+    renderNotificationPreferences();
+    showToast("Preferências de notificação salvas.");
+  } catch (error) {
+    showToast(humanError(error, "Não foi possível salvar as preferências."));
+  } finally {
+    state.notificationsBusy = false;
+    elements.saveNotificationPreferencesButton.disabled = false;
+  }
+}
+
+function notificationCategoryLabel(category) {
+  return ({
+    device: "CONTROLADOR",
+    sensor: "SENSOR",
+    alarm: "ALARME",
+    profile: "RECEITA",
+    command: "COMANDO",
+  })[category] || "SISTEMA";
 }
 
 function renderDeviceList() {
@@ -2722,6 +2921,9 @@ function startTimers() {
   state.refreshTimer = window.setInterval(() => void refreshLatest(), 2_000);
   scheduleHistoryRefresh();
   state.supportingTimer = window.setInterval(() => void refreshSupportingData(), 30_000);
+  state.notificationTimer = window.setInterval(() => {
+    if (!document.hidden) void loadNotifications().catch(handleRefreshError);
+  }, 30_000);
 }
 
 function scheduleHistoryRefresh() {
@@ -2738,10 +2940,12 @@ function clearTimers() {
   if (state.refreshTimer) window.clearInterval(state.refreshTimer);
   if (state.historyTimer) window.clearInterval(state.historyTimer);
   if (state.supportingTimer) window.clearInterval(state.supportingTimer);
+  if (state.notificationTimer) window.clearInterval(state.notificationTimer);
   state.uiTimer = null;
   state.refreshTimer = null;
   state.historyTimer = null;
   state.supportingTimer = null;
+  state.notificationTimer = null;
 }
 
 async function api(path, options = {}) {
