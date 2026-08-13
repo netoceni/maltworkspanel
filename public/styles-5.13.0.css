@@ -996,6 +996,7 @@ input:focus-visible {
 }
 
 .status-pill.online { color: var(--green); }
+.status-pill.unstable { color: var(--gold-bright); }
 .status-pill.offline { color: var(--red); }
 .status-pill.neutral { color: var(--muted); }
 
@@ -1198,6 +1199,7 @@ input:focus-visible {
 }
 
 .device-dot.online { background: var(--green); box-shadow: 0 0 9px var(--green); }
+.device-dot.unstable { background: var(--gold-bright); box-shadow: 0 0 7px rgb(224 173 76 / 65%); }
 .device-dot.offline { background: var(--red); }
 
 .sidebar-foot {

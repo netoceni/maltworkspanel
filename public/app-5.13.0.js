@@ -3,6 +3,7 @@
 const API_BASE = ["localhost", "127.0.0.1"].includes(window.location.hostname)
   ? "http://127.0.0.1:8787"
   : "https://api.maltworks.com.br";
+const REALTIME_BASE = API_BASE.replace(/^http/u, "ws");
 const ADMIN_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
   ? "http://127.0.0.1:8791/"
   : "https://admin.maltworks.com.br";
@@ -57,6 +58,12 @@ const state = {
   notificationsOpen: false,
   notificationsBusy: false,
   notificationTimer: null,
+  realtimeSocket: null,
+  realtimeReconnectTimer: null,
+  realtimeReconnectAttempt: 0,
+  realtimeManualClose: false,
+  realtimeLastMessageAt: 0,
+  devicePresence: {},
 };
 
 const elements = {};
@@ -379,6 +386,7 @@ async function handleContactSubmit(event) {
 }
 
 async function handleLogout() {
+  disconnectRealtime();
   try {
     await api("/v1/auth/logout", { method: "POST" });
   } catch {
@@ -410,6 +418,7 @@ async function enterDashboard() {
   }
   selectTab(state.activeTab);
   startTimers();
+  connectRealtime();
   if (state.pendingClaim) openClaimDialog(state.pendingClaim);
 }
 
@@ -686,6 +695,8 @@ function clearClaimFromUrl() {
 }
 
 function showLogin() {
+  disconnectRealtime();
+  state.devicePresence = {};
   clearTimers();
   elements.appView.hidden = true;
   elements.loginView.hidden = false;
@@ -1118,7 +1129,7 @@ function renderDeviceList() {
   elements.deviceList.replaceChildren();
 
   for (const device of state.devices) {
-    const online = isOnline(device.stateReceivedAt || device.lastSeenAt);
+    const connection = connectionStatus(device.stateReceivedAt || device.lastSeenAt, device.id);
     const item = document.createElement("div");
     item.className = `device-item${device.id === state.selectedDeviceId ? " active" : ""}`;
 
@@ -1142,11 +1153,13 @@ function renderDeviceList() {
       name.append(" ", favorite);
     }
     const status = document.createElement("small");
-    status.textContent = online ? "Online agora" : "Sem comunicação";
+    status.textContent = connection === "online"
+      ? "Online agora"
+      : connection === "unstable" ? "Conexão instável" : "Sem comunicação";
     copy.append(name, status);
 
     const dot = document.createElement("i");
-    dot.className = `device-dot ${online ? "online" : "offline"}`;
+    dot.className = `device-dot ${connection}`;
 
     button.append(symbol, copy, dot);
     button.addEventListener("click", () => void selectDevice(device.id));
@@ -1235,11 +1248,10 @@ function renderLatest() {
   if (!data) return;
 
   const device = state.devices.find((item) => item.id === state.selectedDeviceId);
-  const online = isOnline(snapshot.receivedAt);
+  const connection = connectionStatus(snapshot.receivedAt);
 
   elements.deviceName.textContent = device?.name || data.deviceId;
-  setStatusPill(elements.deviceStatus, online ? "online" : "offline", online ? "ONLINE" : "OFFLINE");
-  setGlobalStatus(online ? "online" : "offline", online ? "SISTEMA ONLINE" : "CONTROLADOR OFFLINE");
+  renderConnectionStatus(connection);
   elements.deviceMeta.textContent = `${data.deviceId}  ·  FIRMWARE ${data.firmware?.version || "—"}`;
   elements.lastUpdate.textContent = `${formatDateTime(snapshot.receivedAt)} · ${timeAgo(snapshot.receivedAt)}`;
 
@@ -2410,9 +2422,7 @@ function updateTimeSensitiveUi() {
   const receivedAt = state.latest?.receivedAt;
   if (!receivedAt) return;
 
-  const online = isOnline(receivedAt);
-  setStatusPill(elements.deviceStatus, online ? "online" : "offline", online ? "ONLINE" : "OFFLINE");
-  setGlobalStatus(online ? "online" : "offline", online ? "SISTEMA ONLINE" : "CONTROLADOR OFFLINE");
+  renderConnectionStatus(connectionStatus(receivedAt));
   elements.lastUpdate.textContent = `${formatDateTime(receivedAt)} · ${timeAgo(receivedAt)}`;
 }
 
@@ -2975,12 +2985,18 @@ function renderNoDevices() {
 function startTimers() {
   clearTimers();
   state.uiTimer = window.setInterval(updateTimeSensitiveUi, 1_000);
-  state.refreshTimer = window.setInterval(() => void refreshLatest(), 2_000);
+  state.refreshTimer = window.setInterval(() => {
+    const realtimeFresh = state.realtimeSocket?.readyState === WebSocket.OPEN &&
+      Date.now() - state.realtimeLastMessageAt < 15_000;
+    if (!realtimeFresh) void refreshLatest();
+  }, 2_000);
   scheduleHistoryRefresh();
   state.supportingTimer = window.setInterval(() => void refreshSupportingData(), 30_000);
   state.notificationTimer = window.setInterval(() => {
-    if (!document.hidden) void loadNotifications().catch(handleRefreshError);
-  }, 30_000);
+    if (!document.hidden && state.realtimeSocket?.readyState !== WebSocket.OPEN) {
+      void loadNotifications().catch(handleRefreshError);
+    }
+  }, 5_000);
 }
 
 function scheduleHistoryRefresh() {
@@ -3003,6 +3019,132 @@ function clearTimers() {
   state.historyTimer = null;
   state.supportingTimer = null;
   state.notificationTimer = null;
+}
+
+function connectRealtime() {
+  if (!state.user || state.realtimeSocket?.readyState === WebSocket.OPEN ||
+      state.realtimeSocket?.readyState === WebSocket.CONNECTING) return;
+  if (state.realtimeReconnectTimer) {
+    window.clearTimeout(state.realtimeReconnectTimer);
+    state.realtimeReconnectTimer = null;
+  }
+
+  state.realtimeManualClose = false;
+  const organizationId = state.user.memberships?.[0]?.organizationId;
+  const suffix = organizationId ? `?organizationId=${encodeURIComponent(organizationId)}` : "";
+  const socket = new WebSocket(`${REALTIME_BASE}/v1/realtime${suffix}`);
+  state.realtimeSocket = socket;
+
+  socket.addEventListener("open", () => {
+    state.realtimeReconnectAttempt = 0;
+    state.realtimeLastMessageAt = Date.now();
+    void Promise.all([loadDevices(), loadNotifications()]).catch(handleRefreshError);
+    if (state.selectedDeviceId) void loadLatest().catch(handleRefreshError);
+  });
+  socket.addEventListener("message", (event) => {
+    state.realtimeLastMessageAt = Date.now();
+    handleRealtimeEvent(event.data);
+  });
+  socket.addEventListener("close", () => {
+    if (state.realtimeSocket === socket) state.realtimeSocket = null;
+    if (!state.realtimeManualClose && state.user) scheduleRealtimeReconnect();
+  });
+  socket.addEventListener("error", () => socket.close());
+}
+
+function disconnectRealtime() {
+  state.realtimeManualClose = true;
+  if (state.realtimeReconnectTimer) window.clearTimeout(state.realtimeReconnectTimer);
+  state.realtimeReconnectTimer = null;
+  const socket = state.realtimeSocket;
+  state.realtimeSocket = null;
+  if (socket && socket.readyState < WebSocket.CLOSING) socket.close(1000, "Sessao encerrada");
+}
+
+function scheduleRealtimeReconnect() {
+  if (state.realtimeReconnectTimer || !state.user) return;
+  const delay = Math.min(30_000, 1_000 * (2 ** state.realtimeReconnectAttempt));
+  state.realtimeReconnectAttempt = Math.min(state.realtimeReconnectAttempt + 1, 5);
+  state.realtimeReconnectTimer = window.setTimeout(() => {
+    state.realtimeReconnectTimer = null;
+    connectRealtime();
+  }, delay);
+}
+
+function handleRealtimeEvent(raw) {
+  let event;
+  try {
+    event = JSON.parse(raw);
+  } catch {
+    return;
+  }
+  if (!event || typeof event !== "object") return;
+
+  if (event.type === "telemetry" && event.deviceId && event.state) {
+    state.devicePresence[event.deviceId] = {
+      status: "online",
+      lastSeenAt: Number(event.receivedAt) || Math.floor(Date.now() / 1_000),
+    };
+    const device = state.devices.find((item) => item.id === event.deviceId);
+    if (device) {
+      device.stateReceivedAt = event.receivedAt;
+      device.lastSeenAt = event.receivedAt;
+    }
+    renderDeviceList();
+
+    if (event.deviceId === state.selectedDeviceId) {
+      const previousCommand = state.latest?.latestCommand;
+      state.latest = {
+        ...(state.latest || {}),
+        ok: true,
+        deviceId: event.deviceId,
+        receivedAt: Number(event.receivedAt),
+        state: event.state,
+      };
+      appendRealtimeHistory(event.state, Number(event.receivedAt));
+      renderLatest();
+      announceCommandTransition(previousCommand, state.latest.latestCommand);
+      if (event.state.commandResult) void loadLatest().catch(handleRefreshError);
+    }
+    return;
+  }
+
+  if (event.type === "presence" && event.deviceId) {
+    state.devicePresence[event.deviceId] = {
+      status: event.status === "offline" ? "offline" : "online",
+      lastSeenAt: Number(event.lastSeenAt) || Math.floor(Date.now() / 1_000),
+    };
+    renderDeviceList();
+    if (event.deviceId === state.selectedDeviceId && state.latest) renderLatest();
+    return;
+  }
+
+  if (event.type === "notifications_changed") {
+    void loadNotifications().catch(handleRefreshError);
+    return;
+  }
+
+  if (event.type === "command_changed" && event.deviceId === state.selectedDeviceId) {
+    void loadLatest().catch(handleRefreshError);
+  }
+}
+
+function appendRealtimeHistory(data, receivedAt) {
+  if (state.chartPaused || !Number.isFinite(receivedAt)) return;
+  const point = {
+    receivedAt,
+    refrigeratorValue: data.temperatures?.refrigerator?.value ?? null,
+    thermalWellValue: data.temperatures?.thermalWell?.value ?? null,
+    setpoint: data.control?.setpoint ?? null,
+    controlState: data.control?.state ?? "",
+    cooling: data.control?.cooling ? 1 : 0,
+    heating: data.control?.heating ? 1 : 0,
+    alarmsActive: data.alarms?.active ? 1 : 0,
+    rssi: data.network?.rssi ?? null,
+  };
+  state.history = [point, ...state.history.filter((item) => Number(item.receivedAt) !== receivedAt)]
+    .slice(0, 720);
+  renderChart();
 }
 
 async function api(path, options = {}) {
@@ -3191,15 +3333,38 @@ function setGlobalStatus(kind, label) {
 }
 
 function setStatusPill(element, kind, label) {
-  element.classList.remove("online", "offline", "neutral");
+  element.classList.remove("online", "unstable", "offline", "neutral");
   element.classList.add(kind);
   const labelElement = element.querySelector("span");
   if (labelElement) labelElement.textContent = label;
 }
 
-function isOnline(epochSeconds) {
-  const epoch = Number(epochSeconds);
-  return Number.isFinite(epoch) && Date.now() / 1000 - epoch < 65;
+function connectionStatus(epochSeconds, deviceId = state.selectedDeviceId) {
+  const presence = deviceId ? state.devicePresence[deviceId] : null;
+  if (presence?.status === "offline") return "offline";
+  const epoch = Math.max(Number(epochSeconds) || 0, Number(presence?.lastSeenAt) || 0);
+  if (!Number.isFinite(epoch) || epoch <= 0) return "offline";
+  const age = Date.now() / 1_000 - epoch;
+  if (age < 15) return "online";
+  if (age < 30) return "unstable";
+  return "offline";
+}
+
+function isOnline(epochSeconds, deviceId = state.selectedDeviceId) {
+  return connectionStatus(epochSeconds, deviceId) !== "offline";
+}
+
+function renderConnectionStatus(connection) {
+  if (connection === "online") {
+    setStatusPill(elements.deviceStatus, "online", "ONLINE");
+    setGlobalStatus("online", "SISTEMA ONLINE");
+  } else if (connection === "unstable") {
+    setStatusPill(elements.deviceStatus, "unstable", "INSTÁVEL");
+    setGlobalStatus("unstable", "COMUNICAÇÃO INSTÁVEL");
+  } else {
+    setStatusPill(elements.deviceStatus, "offline", "OFFLINE");
+    setGlobalStatus("offline", "CONTROLADOR OFFLINE");
+  }
 }
 
 function formatNumber(value, digits) {
