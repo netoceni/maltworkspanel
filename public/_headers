@@ -9,8 +9,8 @@
 /index.html
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
-/app-5.12.0.js
+/app-5.13.0.js
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
-/styles-5.12.0.css
+/styles-5.13.0.css
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0

@@ -78,7 +78,7 @@ function cacheElements() {
     "loginError", "loginButton", "logoutButton", "refreshButton", "globalStatus",
     "adminAccessLink", "notificationShell", "notificationButton", "notificationBadge",
     "notificationPanel", "closeNotificationButton", "notificationUnreadLabel",
-    "markAllNotificationsReadButton", "notificationList", "notificationEmpty",
+    "markAllNotificationsReadButton", "clearAllNotificationsButton", "notificationList", "notificationEmpty",
     "notificationPreferencesForm", "notificationEmailEnabled", "notificationDeviceEvents",
     "notificationSensorEvents", "notificationAlarmEvents", "notificationProfileEvents",
     "notificationCommandEvents", "saveNotificationPreferencesButton",
@@ -185,6 +185,7 @@ function bindEvents() {
   elements.notificationButton.addEventListener("click", toggleNotificationPanel);
   elements.closeNotificationButton.addEventListener("click", closeNotificationPanel);
   elements.markAllNotificationsReadButton.addEventListener("click", () => void markAllNotificationsRead());
+  elements.clearAllNotificationsButton.addEventListener("click", () => void clearAllNotifications());
   elements.notificationList.addEventListener("click", (event) => void handleNotificationClick(event));
   elements.notificationPreferencesForm.addEventListener("submit", handleNotificationPreferencesSave);
   elements.notificationEmailEnabled.addEventListener("change", renderNotificationPreferences);
@@ -920,16 +921,20 @@ function renderNotifications() {
     ? "Nenhuma pendência"
     : `${unread} não lida${unread === 1 ? "" : "s"}`;
   elements.markAllNotificationsReadButton.disabled = unread === 0 || state.notificationsBusy;
+  elements.clearAllNotificationsButton.disabled = state.notifications.length === 0 || state.notificationsBusy;
   elements.notificationList.replaceChildren();
   elements.notificationEmpty.hidden = state.notifications.length > 0;
 
   for (const notification of state.notifications) {
-    const item = document.createElement("button");
-    item.type = "button";
+    const item = document.createElement("div");
     item.className = `notification-item${notification.isRead ? "" : " unread"}`;
-    item.dataset.notificationId = notification.id;
-    item.dataset.deviceId = notification.deviceId || "";
     item.dataset.severity = notification.severity || "info";
+
+    const openButton = document.createElement("button");
+    openButton.type = "button";
+    openButton.className = "notification-item-open";
+    openButton.dataset.notificationId = notification.id;
+    openButton.dataset.deviceId = notification.deviceId || "";
 
     const dot = document.createElement("span");
     dot.className = "notification-dot";
@@ -945,12 +950,26 @@ function renderNotifications() {
     const category = notificationCategoryLabel(notification.category);
     meta.textContent = `${category} · ${timeAgo(notification.createdAt)}`;
     copy.append(title, message, meta);
-    item.append(dot, copy);
+    openButton.append(dot, copy);
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "notification-delete-button";
+    deleteButton.dataset.deleteNotificationId = notification.id;
+    deleteButton.setAttribute("aria-label", `Apagar notificação: ${notification.title || "Maltworks"}`);
+    deleteButton.title = "Apagar notificação";
+    deleteButton.textContent = "×";
+    deleteButton.disabled = state.notificationsBusy;
+    item.append(openButton, deleteButton);
     elements.notificationList.append(item);
   }
 }
 
 async function handleNotificationClick(event) {
+  const deleteButton = event.target.closest?.("[data-delete-notification-id]");
+  if (deleteButton) {
+    await deleteNotification(deleteButton.dataset.deleteNotificationId);
+    return;
+  }
   const item = event.target.closest?.("[data-notification-id]");
   if (!item || state.notificationsBusy) return;
   const notification = state.notifications.find((entry) => entry.id === item.dataset.notificationId);
@@ -968,6 +987,44 @@ async function handleNotificationClick(event) {
     closeNotificationPanel();
   } catch (error) {
     showToast(humanError(error, "Não foi possível abrir a notificação."));
+  } finally {
+    state.notificationsBusy = false;
+    renderNotifications();
+  }
+}
+
+async function deleteNotification(notificationId) {
+  if (state.notificationsBusy) return;
+  const notification = state.notifications.find((entry) => entry.id === notificationId);
+  if (!notification) return;
+  if (!window.confirm(`Apagar a notificação “${notification.title || "Maltworks"}”?`)) return;
+  state.notificationsBusy = true;
+  renderNotifications();
+  try {
+    const response = await api(`/v1/notifications/${encodeURIComponent(notificationId)}`, { method: "DELETE" });
+    state.notifications = state.notifications.filter((entry) => entry.id !== notificationId);
+    state.notificationUnreadCount = Number(response.unreadCount) || 0;
+    showToast("Notificação apagada.");
+  } catch (error) {
+    showToast(humanError(error, "Não foi possível apagar a notificação."));
+  } finally {
+    state.notificationsBusy = false;
+    renderNotifications();
+  }
+}
+
+async function clearAllNotifications() {
+  if (state.notificationsBusy || state.notifications.length === 0) return;
+  if (!window.confirm("Apagar todas as notificações da sua conta? Novos avisos continuarão aparecendo normalmente.")) return;
+  state.notificationsBusy = true;
+  renderNotifications();
+  try {
+    await api("/v1/notifications", { method: "DELETE" });
+    state.notifications = [];
+    state.notificationUnreadCount = 0;
+    showToast("Todas as notificações foram apagadas.");
+  } catch (error) {
+    showToast(humanError(error, "Não foi possível apagar as notificações."));
   } finally {
     state.notificationsBusy = false;
     renderNotifications();

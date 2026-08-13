@@ -1,4 +1,10 @@
-# Maltworks Cloud Panel — Fase 5.12.0
+# Maltworks Cloud Panel — Fase 5.13.0
+
+## Novidades 5.13.0
+
+- exclusão individual de notificações com confirmação;
+- opção para apagar todas as notificações visíveis da conta;
+- exclusões não afetam os avisos dos demais membros da organização.
 
 Painel web responsivo para os controladores Maltworks, preparado para
 Cloudflare Pages e integrado à API oficial em `https://api.maltworks.com.br`.
@@ -40,9 +46,9 @@ Cloudflare Pages e integrado à API oficial em `https://api.maltworks.com.br`.
 - acompanhamento cloud de OG e leituras manuais de densidade;
 - gráfico de fermentação, atenuação aparente e ABV estimado;
 - correção e encerramento do acompanhamento de cada lote;
-- compatibilidade com API 5.9.0 e firmware 5.3.3;
+- compatibilidade com API 5.10.0 e firmware 5.3.3;
 - correção da navegação por abas com inicialização independente da API;
-- arquivos JavaScript e CSS exclusivos da versão 5.12.0 para impedir mistura
+- arquivos JavaScript e CSS exclusivos da versão 5.13.0 para impedir mistura
   com recursos antigos mantidos pelo navegador ou pela CDN.
 
 ## Desenvolvimento

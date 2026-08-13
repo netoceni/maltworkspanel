@@ -7,7 +7,7 @@
     <meta name="description" content="Painel de monitoramento e controle seguro dos controladores Maltworks." />
     <title>Maltworks Cloud</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles-5.12.0.css" />
+    <link rel="stylesheet" href="/styles-5.13.0.css" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -242,7 +242,10 @@
               </div>
               <div class="notification-toolbar">
                 <span id="notificationUnreadLabel">Nenhuma pendência</span>
-                <button id="markAllNotificationsReadButton" type="button">MARCAR TODAS COMO LIDAS</button>
+                <div class="notification-toolbar-actions">
+                  <button id="markAllNotificationsReadButton" type="button">MARCAR COMO LIDAS</button>
+                  <button id="clearAllNotificationsButton" class="danger" type="button">APAGAR TODAS</button>
+                </div>
               </div>
               <div id="notificationList" class="notification-list"></div>
               <p id="notificationEmpty" class="notification-empty">Nenhuma notificação por enquanto.</p>
@@ -270,7 +273,7 @@
       <aside class="sidebar">
         <div class="sidebar-title"><span>CONTROLADORES</span><b id="deviceCount">0</b></div>
         <nav id="deviceList" class="device-list" aria-label="Controladores"></nav>
-        <div class="sidebar-foot"><span>API</span><b>5.9.0</b><span>PAINEL</span><b>5.12.0</b></div>
+        <div class="sidebar-foot"><span>API</span><b>5.10.0</b><span>PAINEL</span><b>5.13.0</b></div>
       </aside>
 
       <main class="dashboard">
@@ -583,6 +586,6 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app-5.12.0.js" defer></script>
+    <script src="/app-5.13.0.js" defer></script>
   </body>
 </html>

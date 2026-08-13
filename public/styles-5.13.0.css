@@ -829,24 +829,50 @@ input:focus-visible {
 }
 
 .notification-toolbar button:disabled { opacity: 0.35; cursor: default; }
+.notification-toolbar-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.notification-toolbar button.danger { color: #db705f; }
 
 .notification-list { min-height: 0; overflow-y: auto; }
 
 .notification-item {
   position: relative;
+  width: 100%;
+  border-bottom: 1px solid var(--line-soft);
+  background: transparent;
+  transition: background 150ms ease;
+}
+
+.notification-item-open {
   display: grid;
   width: 100%;
   grid-template-columns: 10px minmax(0, 1fr);
   gap: 12px;
-  padding: 15px 18px;
+  padding: 15px 50px 15px 18px;
   border: 0;
-  border-bottom: 1px solid var(--line-soft);
   color: var(--ink);
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background 150ms ease;
 }
+
+.notification-delete-button {
+  position: absolute;
+  top: 11px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: #82766d;
+  background: transparent;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.notification-delete-button:hover { border-color: rgb(219 112 95 / 35%); color: #db705f; background: rgb(219 112 95 / 8%); }
+.notification-delete-button:disabled { opacity: 0.35; cursor: default; }
 
 .notification-item:hover { background: rgb(255 255 255 / 3%); }
 .notification-item.unread { background: rgb(200 148 53 / 7%); }
