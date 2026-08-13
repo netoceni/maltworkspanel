@@ -475,6 +475,38 @@ input:focus-visible {
   text-transform: none;
 }
 
+.device-favorite-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 2%);
+  cursor: pointer;
+}
+
+.device-favorite-field input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--gold);
+}
+
+.device-favorite-field span { display: grid; gap: 4px; }
+.device-favorite-field b { color: var(--cream); font-size: 0.82rem; }
+.device-favorite-field small { color: var(--muted); font-size: 0.72rem; }
+
+.edit-device-actions {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.edit-device-actions button { min-height: 48px; }
+
 .delete-device-dialog {
   border-color: rgb(219 112 95 / 58%);
 }
@@ -834,18 +866,16 @@ input:focus-visible {
 }
 
 .device-item {
+  position: relative;
   display: grid;
   width: 100%;
-  grid-template-columns: 34px 1fr auto;
+  grid-template-columns: minmax(0, 1fr) 34px;
   align-items: center;
-  gap: 10px;
-  padding: 12px 11px;
+  gap: 2px;
   border: 1px solid transparent;
   border-radius: 10px;
   color: var(--cream);
   background: transparent;
-  text-align: left;
-  cursor: pointer;
 }
 
 .device-item:hover { background: rgb(255 255 255 / 2%); }
@@ -853,6 +883,20 @@ input:focus-visible {
 .device-item.active {
   border-color: #594529;
   background: linear-gradient(90deg, rgb(200 148 53 / 12%), rgb(200 148 53 / 3%));
+}
+
+.device-select {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 4px 12px 10px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
 }
 
 .device-symbol {
@@ -866,7 +910,7 @@ input:focus-visible {
   font-family: var(--mono);
 }
 
-.device-item span:nth-child(2) {
+.device-select > span:nth-child(2) {
   display: grid;
   gap: 3px;
   min-width: 0;
@@ -883,6 +927,65 @@ input:focus-visible {
   color: var(--muted);
   font-size: 0.62rem;
 }
+
+.device-favorite-mark {
+  color: var(--gold-bright);
+  font-style: normal;
+}
+
+.device-menu-shell { position: relative; }
+
+.device-menu-button {
+  display: grid;
+  width: 30px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.device-menu-button:hover,
+.device-menu-button[aria-expanded="true"] {
+  color: var(--cream);
+  background: rgb(255 255 255 / 6%);
+}
+
+.device-menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 5px);
+  right: 0;
+  display: grid;
+  width: max-content;
+  min-width: 178px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #211a15;
+  box-shadow: 0 18px 38px rgb(0 0 0 / 42%);
+}
+
+.device-menu[hidden] { display: none; }
+
+.device-menu button {
+  padding: 10px 11px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--cream);
+  background: transparent;
+  text-align: left;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.device-menu button:hover,
+.device-menu button:focus-visible { background: rgb(255 255 255 / 6%); }
+.device-menu button.danger { color: #ef9b8d; }
 
 .device-dot {
   width: 7px;
@@ -1313,10 +1416,21 @@ input:focus-visible {
 .legend-temp { background: var(--gold-bright); }
 .legend-target { border-top: 2px dashed #7a7167; }
 
+.chart-interaction-hint {
+  margin: 0 0 10px;
+  color: #817668;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  line-height: 1.5;
+}
+
 .chart-wrap {
   position: relative;
   min-height: 300px;
 }
+
+.chart-wrap svg { cursor: crosshair; }
+.chart-wrap.zoomed svg { cursor: zoom-out; }
 
 #temperatureChart {
   display: block;
@@ -1352,6 +1466,32 @@ input:focus-visible {
 
 .chart-grid-line { stroke: #3b3127; stroke-width: 1; }
 .chart-grid-text { fill: #71675c; font: 11px var(--mono); }
+
+.chart-inspector { pointer-events: none; }
+.chart-inspector[hidden] { display: none; }
+.chart-inspector-line { stroke: rgb(245 238 229 / 30%); stroke-width: 1; stroke-dasharray: 3 4; }
+.chart-inspector-point { vector-effect: non-scaling-stroke; }
+.chart-inspector-point.temperature-point { fill: var(--gold-bright); stroke: #17120e; stroke-width: 2; }
+.chart-inspector-point.setpoint-point { fill: #8b8175; stroke: #17120e; stroke-width: 2; }
+
+.chart-tooltip {
+  position: absolute;
+  z-index: 12;
+  display: grid;
+  width: 216px;
+  gap: 7px;
+  padding: 12px 13px;
+  border: 1px solid #5a4936;
+  border-radius: 10px;
+  background: rgb(25 20 16 / 96%);
+  box-shadow: 0 16px 36px rgb(0 0 0 / 38%);
+  pointer-events: none;
+}
+
+.chart-tooltip[hidden] { display: none; }
+.chart-tooltip span { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.chart-tooltip small { color: var(--muted); font: 0.61rem var(--mono); text-transform: uppercase; }
+.chart-tooltip b { color: var(--cream); font: 0.69rem var(--mono); text-align: right; }
 
 .chart-empty {
   position: absolute;

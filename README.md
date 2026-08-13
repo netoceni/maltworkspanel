@@ -1,4 +1,4 @@
-# Maltworks Cloud Panel — Fase 5.10.0
+# Maltworks Cloud Panel — Fase 5.11.0
 
 Painel web responsivo para os controladores Maltworks, preparado para
 Cloudflare Pages e integrado à API oficial em `https://api.maltworks.com.br`.
@@ -9,6 +9,7 @@ Cloudflare Pages e integrado à API oficial em `https://api.maltworks.com.br`.
 - acesso ao painel ADMIN exibido somente para contas autorizadas pelo sistema,
   sem alterar o papel da conta dentro da organização do cliente;
 - múltiplos controladores por organização;
+- menu de ações por controlador, com edição de nome e favorito persistidos na nuvem;
 - temperatura, setpoint, histerese, relés e sinal Wi-Fi;
 - perfil de fermentação, alarmes e dados do dispositivo;
 - alteração remota segura do setpoint, com confirmação do ESP32;
@@ -17,7 +18,7 @@ Cloudflare Pages e integrado à API oficial em `https://api.maltworks.com.br`.
 - início, pausa, retomada e interrupção remota dos perfis;
 - cópia local da receita no ESP32 para execução offline;
 - bloqueio automático durante perfil ativo, dispositivo offline ou comando pendente;
-- gráfico SVG sem bibliotecas externas;
+- gráfico SVG sem bibliotecas externas, com zoom pela roda do mouse e detalhes por ponto;
 - atualização automática e layout responsivo;
 - atualização visual a cada segundo, estado atual a cada dois segundos e
   histórico a cada trinta segundos;
@@ -37,9 +38,9 @@ Cloudflare Pages e integrado à API oficial em `https://api.maltworks.com.br`.
 - acompanhamento cloud de OG e leituras manuais de densidade;
 - gráfico de fermentação, atenuação aparente e ABV estimado;
 - correção e encerramento do acompanhamento de cada lote;
-- compatibilidade com API 5.7.0 e firmware 5.2.0;
+- compatibilidade com API 5.8.0 e firmware 5.3.3;
 - correção da navegação por abas com inicialização independente da API;
-- arquivos JavaScript e CSS exclusivos da versão 5.10.0 para impedir mistura
+- arquivos JavaScript e CSS exclusivos da versão 5.11.0 para impedir mistura
   com recursos antigos mantidos pelo navegador ou pela CDN.
 
 ## Desenvolvimento

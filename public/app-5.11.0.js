@@ -7,6 +7,7 @@ const ADMIN_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
   ? "http://127.0.0.1:8791/"
   : "https://admin.maltworks.com.br";
 const SVG_NS = "http://www.w3.org/2000/svg";
+const temperatureChartInteractions = new WeakMap();
 
 const state = {
   user: null,
@@ -45,6 +46,11 @@ const state = {
   pendingConfigurationScope: null,
   activeTab: "dashboard",
   pendingClaim: null,
+  openDeviceMenuId: null,
+  editingDeviceId: null,
+  deletingDeviceId: null,
+  chartViewportStart: null,
+  chartViewportEnd: null,
 };
 
 const elements = {};
@@ -74,6 +80,9 @@ function cacheElements() {
     "claimLoginHint", "openClaimButton", "claimDialog", "closeClaimButton", "claimForm",
     "claimRegistrationToken", "claimDeviceName", "claimError",
     "claimSubmitButton", "claimSuccess", "claimSuccessCloseButton",
+    "editDeviceDialog", "editDeviceForm", "closeEditDeviceButton",
+    "cancelEditDeviceButton", "editDeviceName", "editDeviceFavorite",
+    "editDeviceError", "saveEditDeviceButton",
     "deleteDeviceDialog", "deleteDeviceForm", "closeDeleteDeviceButton",
     "cancelDeleteDeviceButton", "deleteDeviceName", "deleteDeviceId",
     "deleteDeviceConfirmation", "deleteDeviceError", "deleteDeviceSubmitButton",
@@ -83,7 +92,7 @@ function cacheElements() {
     "deviceStatus", "deviceMeta", "lastUpdate", "refrigeratorTemperature",
     "setpointValue", "hysteresisValue", "thermalWellTemperature", "thermalWellStatus",
     "controlState", "coolingRelay", "heatingRelay", "rssiValue", "signalMeter",
-    "signalQuality", "temperatureChart", "chartGrid", "chartLabels", "targetPath",
+    "signalQuality", "temperatureChart", "chartWrap", "chartGrid", "chartLabels", "targetPath",
     "temperaturePath", "chartEmpty", "profileBadge", "profileName", "profileStages",
     "profileRemaining", "compressorProtection", "alarmCard", "alarmBadge", "alarmSymbol",
     "alarmTitle", "alarmText", "firmwareBadge", "systemDeviceId", "bootId", "uptime",
@@ -108,7 +117,7 @@ function cacheElements() {
     "alarmSettingsStatusText", "exportHistoryButton", "deviceRefrigeratorSensor",
     "deviceThermalWellSensor", "deviceCompressorDuration", "deviceSignal",
     "profileProgressText", "profileProgressFill", "openHistoryButton",
-    "dashboardTemperatureChart", "dashboardChartGrid", "dashboardChartLabels",
+    "dashboardTemperatureChart", "dashboardChartWrap", "dashboardChartGrid", "dashboardChartLabels",
     "dashboardTargetPath", "dashboardTemperaturePath", "dashboardChartEmpty",
     "fermentationStartView", "fermentationStartForm", "fermentationNameInput",
     "fermentationOgInput", "fermentationStartedAtInput", "startFermentationButton",
@@ -147,7 +156,13 @@ function bindEvents() {
     if (event.target === elements.claimDialog) closeClaimDialog();
   });
   elements.claimRegistrationToken.addEventListener("input", formatRegistrationTokenInput);
-  elements.openDeleteDeviceButton.addEventListener("click", openDeleteDeviceDialog);
+  elements.closeEditDeviceButton.addEventListener("click", closeEditDeviceDialog);
+  elements.cancelEditDeviceButton.addEventListener("click", closeEditDeviceDialog);
+  elements.editDeviceForm.addEventListener("submit", handleDeviceEdit);
+  elements.editDeviceDialog.addEventListener("click", (event) => {
+    if (event.target === elements.editDeviceDialog) closeEditDeviceDialog();
+  });
+  elements.openDeleteDeviceButton.addEventListener("click", () => openDeleteDeviceDialog());
   elements.closeDeleteDeviceButton.addEventListener("click", closeDeleteDeviceDialog);
   elements.cancelDeleteDeviceButton.addEventListener("click", closeDeleteDeviceDialog);
   elements.deleteDeviceForm.addEventListener("submit", handleDeviceDelete);
@@ -186,6 +201,7 @@ function bindEvents() {
     button.addEventListener("click", () => {
       if (state.chartPaused) return;
       state.historyRange = button.dataset.temperatureRange;
+      resetChartViewport();
       state.chartRevision += 1;
       document.querySelectorAll("[data-temperature-range]").forEach((item) => {
         item.classList.toggle("active", item.dataset.temperatureRange === state.historyRange);
@@ -197,7 +213,15 @@ function bindEvents() {
   document.querySelectorAll("[data-chart-pause]").forEach((button) => {
     button.addEventListener("click", toggleChartPause);
   });
+  initializeTemperatureChartInteractions();
   updateChartLiveControls();
+
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest?.(".device-menu-shell")) closeDeviceMenus();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && state.openDeviceMenuId) closeDeviceMenus();
+  });
 
   window.addEventListener("focus", () => {
     if (!elements.appView.hidden) void refreshAll(false);
@@ -434,12 +458,107 @@ async function handleDeviceClaim(event) {
   }
 }
 
-function openDeleteDeviceDialog() {
-  const device = state.devices.find((item) => item.id === state.selectedDeviceId);
+function openEditDeviceDialog(deviceId) {
+  const device = state.devices.find((item) => item.id === deviceId);
+  if (!device) return;
+  closeDeviceMenus();
+  state.editingDeviceId = device.id;
+  setEditDeviceError("");
+  setEditDeviceBusy(false);
+  elements.editDeviceName.value = device.name;
+  elements.editDeviceFavorite.checked = device.favorite === true;
+  if (!elements.editDeviceDialog.open) elements.editDeviceDialog.showModal();
+  window.setTimeout(() => {
+    elements.editDeviceName.focus();
+    elements.editDeviceName.select();
+  }, 0);
+}
+
+function closeEditDeviceDialog() {
+  if (elements.editDeviceDialog.open) elements.editDeviceDialog.close();
+  state.editingDeviceId = null;
+}
+
+async function handleDeviceEdit(event) {
+  event.preventDefault();
+  const deviceId = state.editingDeviceId;
+  if (!deviceId) return;
+  const name = elements.editDeviceName.value.trim();
+  if (name.length < 2 || name.length > 80) {
+    setEditDeviceError("O nome deve ter entre 2 e 80 caracteres.");
+    elements.editDeviceName.focus();
+    return;
+  }
+
+  setEditDeviceError("");
+  setEditDeviceBusy(true);
+  try {
+    const response = await api(`/v1/devices/${encodeURIComponent(deviceId)}`, {
+      method: "PUT",
+      body: { name, favorite: elements.editDeviceFavorite.checked },
+    });
+    applyDeviceUpdate(response.device);
+    closeEditDeviceDialog();
+    showToast("Controlador atualizado.");
+  } catch (error) {
+    if (isAuthenticationError(error)) {
+      closeEditDeviceDialog();
+      showLogin();
+      setLoginError("Sua sessão expirou. Entre novamente.");
+      return;
+    }
+    setEditDeviceError(humanError(error, "Não foi possível atualizar o controlador."));
+  } finally {
+    setEditDeviceBusy(false);
+  }
+}
+
+async function toggleDeviceFavorite(deviceId) {
+  const device = state.devices.find((item) => item.id === deviceId);
+  if (!device) return;
+  closeDeviceMenus();
+  try {
+    const response = await api(`/v1/devices/${encodeURIComponent(deviceId)}`, {
+      method: "PUT",
+      body: { favorite: device.favorite !== true },
+    });
+    applyDeviceUpdate(response.device);
+    showToast(response.device.favorite ? "Controlador adicionado aos favoritos." : "Controlador removido dos favoritos.");
+  } catch (error) {
+    if (isAuthenticationError(error)) {
+      showLogin();
+      setLoginError("Sua sessão expirou. Entre novamente.");
+      return;
+    }
+    showToast(humanError(error, "Não foi possível alterar o favorito."));
+  }
+}
+
+function applyDeviceUpdate(updatedDevice) {
+  state.devices = state.devices
+    .map((device) => device.id === updatedDevice.id ? { ...device, ...updatedDevice } : device)
+    .sort((first, second) => Number(second.favorite === true) - Number(first.favorite === true) ||
+      first.name.localeCompare(second.name, "pt-BR", { sensitivity: "base" }));
+  renderDeviceList();
+  renderLatest();
+}
+
+function closeDeviceMenus() {
+  state.openDeviceMenuId = null;
+  document.querySelectorAll(".device-menu").forEach((menu) => { menu.hidden = true; });
+  document.querySelectorAll(".device-menu-button").forEach((button) => {
+    button.setAttribute("aria-expanded", "false");
+  });
+}
+
+function openDeleteDeviceDialog(deviceId = state.selectedDeviceId) {
+  const device = state.devices.find((item) => item.id === deviceId);
   if (!device) {
     showToast("Selecione um controlador para excluir.");
     return;
   }
+  closeDeviceMenus();
+  state.deletingDeviceId = device.id;
   setDeleteDeviceError("");
   setDeleteDeviceBusy(false);
   elements.deleteDeviceName.textContent = device.name;
@@ -451,11 +570,12 @@ function openDeleteDeviceDialog() {
 
 function closeDeleteDeviceDialog() {
   if (elements.deleteDeviceDialog.open) elements.deleteDeviceDialog.close();
+  state.deletingDeviceId = null;
 }
 
 async function handleDeviceDelete(event) {
   event.preventDefault();
-  const deviceId = state.selectedDeviceId;
+  const deviceId = state.deletingDeviceId;
   if (!deviceId) return;
 
   const confirmation = elements.deleteDeviceConfirmation.value.trim().toUpperCase();
@@ -473,11 +593,13 @@ async function handleDeviceDelete(event) {
       body: { confirmDeviceId: confirmation },
     });
     closeDeleteDeviceDialog();
-    state.selectedDeviceId = null;
-    state.latest = null;
-    state.history = [];
-    state.fermentation = null;
-    removeLocalPreference("mw_selected_device");
+    if (state.selectedDeviceId === deviceId) {
+      state.selectedDeviceId = null;
+      state.latest = null;
+      state.history = [];
+      state.fermentation = null;
+      removeLocalPreference("mw_selected_device");
+    }
     await loadDevices();
     showToast("Controlador excluído. Ele já pode ser cadastrado novamente.");
   } catch (error) {
@@ -562,11 +684,13 @@ async function loadDevices() {
   state.devices = Array.isArray(response.devices) ? response.devices : [];
 
   const savedDevice = readLocalPreference("mw_selected_device");
+  const previousDeviceId = state.selectedDeviceId;
   if (!state.selectedDeviceId || !state.devices.some((device) => device.id === state.selectedDeviceId)) {
     state.selectedDeviceId = state.devices.some((device) => device.id === savedDevice)
       ? savedDevice
       : state.devices[0]?.id ?? null;
   }
+  if (previousDeviceId !== state.selectedDeviceId) resetChartViewport();
 
   renderDeviceList();
   if (!state.selectedDeviceId) {
@@ -739,9 +863,12 @@ function renderDeviceList() {
 
   for (const device of state.devices) {
     const online = isOnline(device.stateReceivedAt || device.lastSeenAt);
+    const item = document.createElement("div");
+    item.className = `device-item${device.id === state.selectedDeviceId ? " active" : ""}`;
+
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `device-item${device.id === state.selectedDeviceId ? " active" : ""}`;
+    button.className = "device-select";
     button.setAttribute("aria-current", device.id === state.selectedDeviceId ? "true" : "false");
 
     const symbol = document.createElement("span");
@@ -751,6 +878,13 @@ function renderDeviceList() {
     const copy = document.createElement("span");
     const name = document.createElement("b");
     name.textContent = device.name;
+    if (device.favorite === true) {
+      const favorite = document.createElement("i");
+      favorite.className = "device-favorite-mark";
+      favorite.setAttribute("aria-label", "Favorito");
+      favorite.textContent = "★";
+      name.append(" ", favorite);
+    }
     const status = document.createElement("small");
     status.textContent = online ? "Online agora" : "Sem comunicação";
     copy.append(name, status);
@@ -760,17 +894,72 @@ function renderDeviceList() {
 
     button.append(symbol, copy, dot);
     button.addEventListener("click", () => void selectDevice(device.id));
-    elements.deviceList.append(button);
+
+    const menuShell = document.createElement("div");
+    menuShell.className = "device-menu-shell";
+    const menuButton = document.createElement("button");
+    menuButton.type = "button";
+    menuButton.className = "device-menu-button";
+    menuButton.setAttribute("aria-label", `Ações de ${device.name}`);
+    menuButton.setAttribute("aria-haspopup", "menu");
+    menuButton.setAttribute("aria-expanded", state.openDeviceMenuId === device.id ? "true" : "false");
+    menuButton.textContent = "⋮";
+
+    const menu = document.createElement("div");
+    menu.className = "device-menu";
+    menu.setAttribute("role", "menu");
+    menu.hidden = state.openDeviceMenuId !== device.id;
+    const menuActions = [
+      createDeviceMenuAction("Editar nome", () => openEditDeviceDialog(device.id)),
+      createDeviceMenuAction(
+        device.favorite === true ? "Remover favorito" : "Adicionar favorito",
+        () => void toggleDeviceFavorite(device.id),
+      ),
+    ];
+    const role = state.user?.memberships?.[0]?.role;
+    if (["owner", "admin"].includes(role)) {
+      menuActions.push(
+        createDeviceMenuAction("Excluir controlador", () => openDeleteDeviceDialog(device.id), true),
+      );
+    }
+    menu.append(...menuActions);
+
+    menuButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const opening = state.openDeviceMenuId !== device.id;
+      closeDeviceMenus();
+      if (opening) {
+        state.openDeviceMenuId = device.id;
+        menu.hidden = false;
+        menuButton.setAttribute("aria-expanded", "true");
+      }
+    });
+
+    menuShell.append(menuButton, menu);
+    item.append(button, menuShell);
+    elements.deviceList.append(item);
   }
+}
+
+function createDeviceMenuAction(label, action, danger = false) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.setAttribute("role", "menuitem");
+  if (danger) button.className = "danger";
+  button.textContent = label;
+  button.addEventListener("click", action);
+  return button;
 }
 
 async function selectDevice(deviceId) {
   if (deviceId === state.selectedDeviceId) return;
   state.selectedDeviceId = deviceId;
+  closeDeviceMenus();
   writeLocalPreference("mw_selected_device", deviceId);
   renderDeviceList();
   state.latest = null;
   state.history = [];
+  resetChartViewport();
   state.fermentation = null;
   state.fermentationError = null;
   state.showNewFermentationForm = false;
@@ -1991,6 +2180,8 @@ function renderChart() {
       const timestamp = Number(point.receivedAt);
       return point.refrigeratorValue !== null &&
         Number.isFinite(Number(point.refrigeratorValue)) &&
+        point.setpoint !== null &&
+        Number.isFinite(Number(point.setpoint)) &&
         (!Number.isFinite(window.start) || timestamp >= window.start) &&
         (!Number.isFinite(window.end) || timestamp <= window.end);
     });
@@ -2017,7 +2208,7 @@ function renderChart() {
   });
 }
 
-function temperatureChartWindow() {
+function temperatureChartBaseWindow() {
   const currentTime = state.chartPaused
     ? state.chartPausedAt
     : Math.floor(Date.now() / 1000);
@@ -2032,6 +2223,179 @@ function temperatureChartWindow() {
     start: Number.isFinite(end) && Number.isFinite(rangeSeconds) ? end - rangeSeconds : state.historyFrom,
     end,
   };
+}
+
+function temperatureChartWindow() {
+  const base = temperatureChartBaseWindow();
+  if (
+    Number.isFinite(state.chartViewportStart) &&
+    Number.isFinite(state.chartViewportEnd) &&
+    state.chartViewportEnd > state.chartViewportStart
+  ) {
+    return {
+      start: state.chartViewportStart,
+      end: state.chartViewportEnd,
+    };
+  }
+  return base;
+}
+
+function resetChartViewport() {
+  state.chartViewportStart = null;
+  state.chartViewportEnd = null;
+  document.querySelectorAll(".chart-wrap").forEach((wrap) => wrap.classList.remove("zoomed"));
+}
+
+function initializeTemperatureChartInteractions() {
+  for (const [svg, wrap] of [
+    [elements.temperatureChart, elements.chartWrap],
+    [elements.dashboardTemperatureChart, elements.dashboardChartWrap],
+  ]) {
+    if (!svg || !wrap) continue;
+    const overlay = document.createElementNS(SVG_NS, "g");
+    overlay.classList.add("chart-inspector");
+    const line = document.createElementNS(SVG_NS, "line");
+    line.classList.add("chart-inspector-line");
+    const temperaturePoint = document.createElementNS(SVG_NS, "circle");
+    temperaturePoint.classList.add("chart-inspector-point", "temperature-point");
+    temperaturePoint.setAttribute("r", "5");
+    const setpointPoint = document.createElementNS(SVG_NS, "circle");
+    setpointPoint.classList.add("chart-inspector-point", "setpoint-point");
+    setpointPoint.setAttribute("r", "4");
+    overlay.append(line, temperaturePoint, setpointPoint);
+    overlay.hidden = true;
+    svg.append(overlay);
+
+    const tooltip = document.createElement("div");
+    tooltip.className = "chart-tooltip";
+    tooltip.hidden = true;
+    tooltip.setAttribute("role", "status");
+    wrap.append(tooltip);
+
+    temperatureChartInteractions.set(svg, {
+      wrap,
+      overlay,
+      line,
+      temperaturePoint,
+      setpointPoint,
+      tooltip,
+      model: null,
+    });
+
+    svg.addEventListener("pointermove", handleTemperatureChartPointerMove);
+    svg.addEventListener("pointerleave", hideTemperatureChartInspector);
+    svg.addEventListener("wheel", handleTemperatureChartWheel, { passive: false });
+    svg.addEventListener("dblclick", () => {
+      resetChartViewport();
+      renderChart();
+      showToast("Escala de tempo restaurada.");
+    });
+  }
+}
+
+function handleTemperatureChartWheel(event) {
+  const interaction = temperatureChartInteractions.get(event.currentTarget);
+  const model = interaction?.model;
+  if (!model || model.points.length < 2) return;
+  event.preventDefault();
+
+  const base = temperatureChartBaseWindow();
+  if (!Number.isFinite(base.start) || !Number.isFinite(base.end) || base.end <= base.start) return;
+  const current = temperatureChartWindow();
+  const currentSpan = current.end - current.start;
+  const maximumSpan = base.end - base.start;
+  const minimumSpan = Math.min(15, maximumSpan);
+  const factor = event.deltaY > 0 ? 1.28 : 0.78;
+  const nextSpan = Math.min(Math.max(currentSpan * factor, minimumSpan), maximumSpan);
+
+  if (nextSpan >= maximumSpan * 0.995) {
+    resetChartViewport();
+    renderChart();
+    return;
+  }
+
+  const bounds = event.currentTarget.getBoundingClientRect();
+  const svgX = (event.clientX - bounds.left) / bounds.width * model.width;
+  const pointerRatio = Math.min(Math.max((svgX - model.pad.left) / model.plotWidth, 0), 1);
+  const anchor = current.start + currentSpan * pointerRatio;
+  let start = anchor - nextSpan * pointerRatio;
+  let end = start + nextSpan;
+  if (start < base.start) {
+    start = base.start;
+    end = start + nextSpan;
+  }
+  if (end > base.end) {
+    end = base.end;
+    start = end - nextSpan;
+  }
+
+  state.chartViewportStart = start;
+  state.chartViewportEnd = end;
+  document.querySelectorAll(".chart-wrap").forEach((wrap) => wrap.classList.add("zoomed"));
+  renderChart();
+}
+
+function handleTemperatureChartPointerMove(event) {
+  const svg = event.currentTarget;
+  const interaction = temperatureChartInteractions.get(svg);
+  const model = interaction?.model;
+  if (!interaction || !model || !model.points.length) return;
+
+  const bounds = svg.getBoundingClientRect();
+  const svgX = (event.clientX - bounds.left) / bounds.width * model.width;
+  const timestamp = model.domainStart +
+    ((svgX - model.pad.left) / model.plotWidth) * model.timeSpanSeconds;
+  const point = model.points.reduce((closest, candidate) =>
+    Math.abs(Number(candidate.receivedAt) - timestamp) < Math.abs(Number(closest.receivedAt) - timestamp)
+      ? candidate
+      : closest,
+  );
+  const temperature = Number(point.refrigeratorValue);
+  const setpoint = Number(point.setpoint);
+  const delta = temperature - setpoint;
+  const pointX = model.x(point.receivedAt);
+  const temperatureY = model.y(temperature);
+  const setpointY = model.y(setpoint);
+
+  interaction.line.setAttribute("x1", pointX);
+  interaction.line.setAttribute("x2", pointX);
+  interaction.line.setAttribute("y1", model.pad.top);
+  interaction.line.setAttribute("y2", model.height - model.pad.bottom);
+  interaction.temperaturePoint.setAttribute("cx", pointX);
+  interaction.temperaturePoint.setAttribute("cy", temperatureY);
+  interaction.setpointPoint.setAttribute("cx", pointX);
+  interaction.setpointPoint.setAttribute("cy", setpointY);
+  interaction.overlay.hidden = false;
+
+  interaction.tooltip.replaceChildren(
+    createChartTooltipRow("Valor atual", `${formatNumber(temperature, 2)} °C`),
+    createChartTooltipRow("Setpoint", `${formatNumber(setpoint, 2)} °C`),
+    createChartTooltipRow("Delta", `${delta >= 0 ? "+" : ""}${formatNumber(delta, 2)} °C`),
+    createChartTooltipRow("Horário", formatDateTime(point.receivedAt)),
+  );
+  interaction.tooltip.hidden = false;
+  const wrapBounds = interaction.wrap.getBoundingClientRect();
+  const requestedLeft = event.clientX - wrapBounds.left + interaction.wrap.scrollLeft + 14;
+  const maximumLeft = interaction.wrap.scrollLeft + interaction.wrap.clientWidth - 224;
+  interaction.tooltip.style.left = `${Math.max(interaction.wrap.scrollLeft + 8, Math.min(requestedLeft, maximumLeft))}px`;
+  interaction.tooltip.style.top = `${Math.max(8, event.clientY - wrapBounds.top - 44)}px`;
+}
+
+function createChartTooltipRow(label, value) {
+  const row = document.createElement("span");
+  const key = document.createElement("small");
+  key.textContent = label;
+  const content = document.createElement("b");
+  content.textContent = value;
+  row.append(key, content);
+  return row;
+}
+
+function hideTemperatureChartInspector(event) {
+  const interaction = temperatureChartInteractions.get(event.currentTarget);
+  if (!interaction) return;
+  interaction.overlay.hidden = true;
+  interaction.tooltip.hidden = true;
 }
 
 function toggleChartPause() {
@@ -2080,8 +2444,15 @@ function renderTemperatureChart(points, graph) {
   } = graph;
   grid.replaceChildren();
   labels.replaceChildren();
+  const svg = temperaturePathElement.ownerSVGElement;
+  const interaction = temperatureChartInteractions.get(svg);
+  if (interaction) interaction.model = null;
 
   if (points.length < 2) {
+    if (interaction) {
+      interaction.overlay.hidden = true;
+      interaction.tooltip.hidden = true;
+    }
     temperaturePathElement.setAttribute("d", "");
     targetPathElement.setAttribute("d", "");
     empty.hidden = false;
@@ -2112,6 +2483,20 @@ function renderTemperatureChart(points, graph) {
     return pad.left + ratio * plotWidth;
   };
   const y = (value) => pad.top + ((maximum - value) / (maximum - minimum)) * plotHeight;
+
+  if (interaction) {
+    interaction.model = {
+      points,
+      width,
+      height,
+      pad,
+      plotWidth,
+      domainStart,
+      timeSpanSeconds,
+      x,
+      y,
+    };
+  }
 
   const temperaturePath = points
     .map((point, index) => `${index ? "L" : "M"}${x(point.receivedAt).toFixed(2)},${y(Number(point.refrigeratorValue)).toFixed(2)}`)
@@ -2309,6 +2694,7 @@ function renderLoadingDevice() {
 function renderNoDevices() {
   state.latest = null;
   state.history = [];
+  resetChartViewport();
   state.fermentation = null;
   state.fermentationError = null;
   state.showNewFermentationForm = false;
@@ -2459,6 +2845,20 @@ function setClaimBusy(busy) {
 function setClaimError(message) {
   elements.claimError.textContent = message;
   elements.claimError.hidden = !message;
+}
+
+function setEditDeviceBusy(busy) {
+  elements.saveEditDeviceButton.disabled = busy;
+  elements.cancelEditDeviceButton.disabled = busy;
+  elements.closeEditDeviceButton.disabled = busy;
+  elements.saveEditDeviceButton.firstElementChild.textContent = busy
+    ? "SALVANDO…"
+    : "SALVAR ALTERAÇÕES";
+}
+
+function setEditDeviceError(message) {
+  elements.editDeviceError.textContent = message;
+  elements.editDeviceError.hidden = !message;
 }
 
 function setDeleteDeviceBusy(busy) {
