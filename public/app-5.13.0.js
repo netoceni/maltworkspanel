@@ -20,6 +20,10 @@ const state = {
   historyFrom: null,
   historyTo: null,
   recipes: [],
+  batches: [],
+  selectedBatchId: null,
+  batchComparison: [],
+  batchFormId: null,
   fermentation: null,
   fermentationError: null,
   fermentationBusy: false,
@@ -148,6 +152,25 @@ function cacheElements() {
     "gravityChartEmpty", "gravityReadingForm", "gravityReadingInput",
     "gravityMeasuredAtInput", "gravityNoteInput", "addGravityReadingButton",
     "gravityReadingCount", "gravityReadingsList", "gravityReadingsEmpty",
+    "newBatchButton", "batchSelector", "batchCompareRecipe", "compareBatchesButton",
+    "batchComparison", "batchComparisonCount", "batchComparisonBody",
+    "batchCodeInput", "batchRecipeInput", "batchEquipmentInput",
+    "batchPlannedFgInput", "batchPlannedVolumeInput",
+    "batchDetailsForm", "batchNameField", "batchCodeField", "batchControllerField",
+    "batchEquipmentField", "batchPlannedFgField", "batchFinalGravityField",
+    "batchPlannedVolumeField", "batchActualVolumeField", "batchSummaryField",
+    "batchSensoryScoreField", "batchSensoryNotesField", "saveBatchDetailsButton",
+    "batchRecipeVersion", "batchRecipeSnapshot",
+    "batchIngredientCount", "batchPlannedCost", "batchActualCost", "batchCostPerLiter",
+    "batchIngredientForm", "ingredientNameInput", "ingredientCategoryInput",
+    "ingredientUnitInput", "ingredientPlannedQuantityInput", "ingredientActualQuantityInput",
+    "ingredientPlannedCostInput", "ingredientActualCostInput", "addBatchIngredientButton",
+    "batchIngredientList", "batchIngredientEmpty",
+    "batchJournalCount", "batchJournalForm", "batchJournalKindInput", "batchJournalDateInput",
+    "batchJournalTitleInput", "batchJournalDetailsInput", "addBatchJournalButton",
+    "batchJournalList", "batchJournalEmpty",
+    "batchAttachmentCount", "batchAttachmentForm", "batchAttachmentInput",
+    "uploadBatchAttachmentButton", "batchAttachmentList", "batchAttachmentEmpty",
   ]) {
     elements[id] = document.getElementById(id);
   }
@@ -217,6 +240,13 @@ function bindEvents() {
   elements.gravityReadingForm.addEventListener("submit", handleGravityReading);
   elements.finishFermentationButton.addEventListener("click", () => void finishFermentationTracking());
   elements.newFermentationButton.addEventListener("click", showNewFermentationForm);
+  elements.newBatchButton.addEventListener("click", showNewFermentationForm);
+  elements.batchSelector.addEventListener("change", () => void selectBatch(elements.batchSelector.value));
+  elements.compareBatchesButton.addEventListener("click", () => void loadBatchComparison());
+  elements.batchDetailsForm.addEventListener("submit", handleBatchDetailsSave);
+  elements.batchIngredientForm.addEventListener("submit", handleBatchIngredientAdd);
+  elements.batchJournalForm.addEventListener("submit", handleBatchJournalAdd);
+  elements.batchAttachmentForm.addEventListener("submit", handleBatchAttachmentUpload);
 
   elements.configurationForm.addEventListener("input", () => { state.configurationDirty = true; });
   elements.calibrationForm.addEventListener("input", () => { state.calibrationDirty = true; });
@@ -397,6 +427,10 @@ async function handleLogout() {
   state.capabilities = { systemAdmin: false };
   state.devices = [];
   state.recipes = [];
+  state.batches = [];
+  state.selectedBatchId = null;
+  state.batchComparison = [];
+  state.batchFormId = null;
   state.fermentation = null;
   state.fermentationError = null;
   state.latest = null;
@@ -860,6 +894,7 @@ async function loadRecipes() {
   state.recipes = Array.isArray(response.recipes) ? response.recipes : [];
   renderRecipes();
   renderProfileProgress();
+  renderBatchRecipeOptions();
 }
 
 async function loadFermentation() {
@@ -870,10 +905,21 @@ async function loadFermentation() {
     return;
   }
   try {
-    const response = await api(
-      `/v1/devices/${encodeURIComponent(state.selectedDeviceId)}/fermentation`,
-    );
-    state.fermentation = response.fermentation || null;
+    await loadBatches();
+    const selectedStillExists = state.batches.some((batch) => batch.id === state.selectedBatchId);
+    if (!selectedStillExists) {
+      state.selectedBatchId = state.batches.find(
+        (batch) => batch.deviceId === state.selectedDeviceId && batch.active,
+      )?.id || state.batches.find((batch) => batch.deviceId === state.selectedDeviceId)?.id || null;
+    }
+    if (!state.selectedBatchId) {
+      state.fermentation = null;
+      state.fermentationError = null;
+      renderFermentation();
+      return;
+    }
+    const response = await api(`/v1/batches/${encodeURIComponent(state.selectedBatchId)}`);
+    state.fermentation = response.batch || null;
     state.fermentationError = null;
     renderFermentation();
   } catch (error) {
@@ -882,6 +928,418 @@ async function loadFermentation() {
     state.fermentationError = error;
     renderFermentation();
   }
+}
+
+async function loadBatches() {
+  const response = await api("/v1/batches");
+  state.batches = Array.isArray(response.batches) ? response.batches : [];
+  renderBatchLibrary();
+}
+
+function renderBatchRecipeOptions() {
+  const startValue = elements.batchRecipeInput.value;
+  const compareValue = elements.batchCompareRecipe.value;
+  const recipes = [...state.recipes].sort((a, b) => String(a.name).localeCompare(String(b.name), "pt-BR"));
+  replaceSelectOptions(elements.batchRecipeInput, recipes, "Sem receita vinculada", startValue);
+  replaceSelectOptions(elements.batchCompareRecipe, recipes, "Selecione uma receita", compareValue);
+  elements.compareBatchesButton.disabled = !elements.batchCompareRecipe.value || state.fermentationBusy;
+}
+
+function replaceSelectOptions(select, items, emptyLabel, selectedValue) {
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = emptyLabel;
+  select.replaceChildren(empty);
+  for (const item of items) {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = `${item.name} · v${item.version || 1}`;
+    select.append(option);
+  }
+  select.value = items.some((item) => item.id === selectedValue) ? selectedValue : "";
+}
+
+function renderBatchLibrary() {
+  if (!elements.batchSelector) return;
+  const selected = state.selectedBatchId;
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = state.batches.length ? "Selecione um lote" : "Nenhum lote cadastrado";
+  elements.batchSelector.replaceChildren(empty);
+  for (const batch of state.batches) {
+    const option = document.createElement("option");
+    option.value = batch.id;
+    const status = batch.active ? "em andamento" : formatDateTime(batch.finishedAt || batch.startedAt);
+    option.textContent = `${batch.batchCode ? `${batch.batchCode} · ` : ""}${batch.name} · ${batch.deviceName} · ${status}`;
+    elements.batchSelector.append(option);
+  }
+  elements.batchSelector.value = state.batches.some((batch) => batch.id === selected) ? selected : "";
+  const activeOnSelectedDevice = state.batches.some(
+    (batch) => batch.deviceId === state.selectedDeviceId && batch.active,
+  );
+  elements.newBatchButton.disabled = !state.selectedDeviceId || activeOnSelectedDevice || state.fermentationBusy || state.user?.memberships?.[0]?.role === "viewer";
+  renderBatchRecipeOptions();
+}
+
+async function selectBatch(batchId) {
+  if (!batchId || state.fermentationBusy) return;
+  const batch = state.batches.find((item) => item.id === batchId);
+  if (!batch) return;
+  if (batch.deviceId !== state.selectedDeviceId) {
+    await selectDevice(batch.deviceId);
+  }
+  state.selectedBatchId = batchId;
+  state.showNewFermentationForm = false;
+  state.batchFormId = null;
+  await loadFermentation();
+}
+
+async function loadBatchComparison() {
+  const recipeId = elements.batchCompareRecipe.value;
+  if (!recipeId || state.fermentationBusy) return;
+  state.fermentationBusy = true;
+  elements.compareBatchesButton.disabled = true;
+  try {
+    const response = await api(`/v1/batches/compare?recipeId=${encodeURIComponent(recipeId)}`);
+    state.batchComparison = Array.isArray(response.batches) ? response.batches : [];
+    renderBatchComparison();
+    if (!state.batchComparison.length) showToast("Ainda não existem lotes desta receita para comparar.");
+  } catch (error) {
+    showToast(humanError(error, "Não foi possível comparar os lotes."));
+  } finally {
+    state.fermentationBusy = false;
+    elements.compareBatchesButton.disabled = false;
+  }
+}
+
+function renderBatchComparison() {
+  elements.batchComparison.hidden = false;
+  elements.batchComparisonCount.textContent = String(state.batchComparison.length);
+  elements.batchComparisonBody.replaceChildren();
+  for (const batch of state.batchComparison) {
+    const row = document.createElement("tr");
+    const metrics = batch.metrics || {};
+    for (const value of [
+      batch.batchCode || batch.name,
+      `${formatGravity(batch.originalGravity)} / ${formatGravity(batch.finalGravity)}`,
+      formatPercent(metrics.abv, 2),
+      formatPercent(metrics.attenuation, 1),
+      `${formatOptionalNumber(batch.plannedVolumeLiters, 1)} / ${formatOptionalNumber(batch.actualVolumeLiters, 1)} L`,
+      `${formatCurrency(metrics.plannedCost)} / ${formatCurrency(metrics.actualCost)}`,
+      batch.sensoryScore === null || batch.sensoryScore === undefined ? "—" : `${batch.sensoryScore}/100`,
+    ]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    row.addEventListener("click", () => void selectBatch(batch.id));
+    elements.batchComparisonBody.append(row);
+  }
+}
+
+function renderBatchDetails(batch, viewer) {
+  const disabled = viewer || state.fermentationBusy;
+  if (state.batchFormId !== batch.id) {
+    state.batchFormId = batch.id;
+    elements.batchNameField.value = batch.name || "";
+    elements.batchCodeField.value = batch.batchCode || "";
+    elements.batchControllerField.value = batch.deviceName || batch.deviceId || "";
+    elements.batchEquipmentField.value = batch.equipmentName || "";
+    elements.batchPlannedFgField.value = inputNumber(batch.plannedFinalGravity, 3);
+    elements.batchFinalGravityField.value = inputNumber(batch.finalGravity, 3);
+    elements.batchPlannedVolumeField.value = inputNumber(batch.plannedVolumeLiters, 1);
+    elements.batchActualVolumeField.value = inputNumber(batch.actualVolumeLiters, 1);
+    elements.batchSummaryField.value = batch.summaryNotes || "";
+    elements.batchSensoryScoreField.value = batch.sensoryScore ?? "";
+    elements.batchSensoryNotesField.value = batch.sensoryNotes || "";
+  }
+  setFormDisabled(elements.batchDetailsForm, disabled);
+  setFormDisabled(elements.batchIngredientForm, disabled);
+  setFormDisabled(elements.batchJournalForm, disabled);
+  setFormDisabled(elements.batchAttachmentForm, disabled);
+  elements.saveBatchDetailsButton.textContent = state.fermentationBusy ? "SALVANDO…" : "SALVAR FICHA";
+  setDefaultDateTime(elements.batchJournalDateInput);
+  renderRecipeSnapshot(batch.recipeSnapshot);
+  renderBatchIngredients(batch.ingredients || [], batch.metrics || {}, viewer);
+  renderBatchJournal(batch.journal || [], viewer);
+  renderBatchAttachments(batch.attachments || [], viewer);
+}
+
+function renderRecipeSnapshot(snapshot) {
+  elements.batchRecipeSnapshot.replaceChildren();
+  if (!snapshot) {
+    elements.batchRecipeVersion.textContent = "SEM RECEITA";
+    elements.batchRecipeSnapshot.hidden = true;
+    return;
+  }
+  elements.batchRecipeSnapshot.hidden = false;
+  elements.batchRecipeVersion.textContent = `RECEITA v${snapshot.version || 1}`;
+  const title = document.createElement("strong");
+  title.textContent = `Receita congelada: ${snapshot.name || "Sem nome"}`;
+  const description = document.createElement("p");
+  description.textContent = snapshot.description || "Sem descrição registrada.";
+  const stages = document.createElement("ol");
+  for (const stage of snapshot.stages || []) {
+    const item = document.createElement("li");
+    item.textContent = `${stage.name || "Etapa"} · ${formatNumber(stage.targetTemperature, 1)} °C · ${formatDuration(stage.durationSeconds)}`;
+    stages.append(item);
+  }
+  elements.batchRecipeSnapshot.append(title, description, stages);
+}
+
+function renderBatchIngredients(items, metrics, viewer) {
+  elements.batchIngredientCount.textContent = String(items.length);
+  elements.batchPlannedCost.textContent = formatCurrency(metrics.plannedCost);
+  elements.batchActualCost.textContent = formatCurrency(metrics.actualCost);
+  elements.batchCostPerLiter.textContent = metrics.costPerLiter === null || metrics.costPerLiter === undefined
+    ? "—" : `${formatCurrency(metrics.costPerLiter)}/L`;
+  elements.batchIngredientList.replaceChildren();
+  elements.batchIngredientEmpty.hidden = items.length > 0;
+  for (const ingredient of items) {
+    const item = batchListItem(
+      ingredient.name,
+      `${formatOptionalNumber(ingredient.plannedQuantity, 3)} ${ingredient.unit} planejado · ${formatOptionalNumber(ingredient.actualQuantity, 3)} ${ingredient.unit} real`,
+      `${formatCurrency(ingredient.plannedCost)} → ${formatCurrency(ingredient.actualCost ?? ingredient.plannedCost)}`,
+    );
+    item.append(batchDeleteButton("Excluir ingrediente", viewer, () => deleteBatchIngredient(ingredient)));
+    elements.batchIngredientList.append(item);
+  }
+}
+
+function renderBatchJournal(items, viewer) {
+  elements.batchJournalCount.textContent = String(items.length);
+  elements.batchJournalList.replaceChildren();
+  elements.batchJournalEmpty.hidden = items.length > 0;
+  for (const entry of items) {
+    const kind = entry.kind === "ocorrencia" ? "OCORRÊNCIA" : "OBSERVAÇÃO";
+    const item = batchListItem(entry.title, `${kind} · ${formatDateTime(entry.occurredAt)}`, entry.details || "Sem detalhes");
+    item.append(batchDeleteButton("Excluir registro", viewer, () => deleteBatchJournalEntry(entry)));
+    elements.batchJournalList.append(item);
+  }
+}
+
+function renderBatchAttachments(items, viewer) {
+  elements.batchAttachmentCount.textContent = String(items.length);
+  elements.batchAttachmentList.replaceChildren();
+  elements.batchAttachmentEmpty.hidden = items.length > 0;
+  for (const attachment of items) {
+    const item = batchListItem(attachment.fileName, `${formatFileSize(attachment.sizeBytes)} · ${formatDateTime(attachment.createdAt)}`, attachment.contentType);
+    const actions = document.createElement("div");
+    actions.className = "batch-item-actions";
+    const download = document.createElement("button");
+    download.type = "button";
+    download.className = "batch-item-download";
+    download.textContent = "BAIXAR";
+    download.addEventListener("click", () => void downloadBatchAttachment(attachment));
+    actions.append(download, batchDeleteButton("Excluir anexo", viewer, () => deleteBatchAttachment(attachment)));
+    item.append(actions);
+    elements.batchAttachmentList.append(item);
+  }
+}
+
+function batchListItem(titleText, metaText, detailText) {
+  const item = document.createElement("article");
+  item.className = "batch-item";
+  const copy = document.createElement("div");
+  copy.className = "batch-item-copy";
+  const title = document.createElement("strong");
+  title.textContent = titleText;
+  const meta = document.createElement("span");
+  meta.textContent = metaText;
+  const detail = document.createElement("small");
+  detail.textContent = detailText;
+  copy.append(title, meta, detail);
+  item.append(copy);
+  return item;
+}
+
+function batchDeleteButton(label, viewer, action) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "batch-item-delete";
+  button.textContent = "×";
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  button.disabled = viewer || state.fermentationBusy;
+  button.addEventListener("click", () => void action());
+  return button;
+}
+
+async function handleBatchDetailsSave(event) {
+  event.preventDefault();
+  if (state.fermentationBusy || !state.fermentation?.id || !elements.batchDetailsForm.reportValidity()) return;
+  await mutateBatch(
+    `/v1/batches/${encodeURIComponent(state.fermentation.id)}`,
+    {
+      method: "PUT",
+      body: {
+        name: elements.batchNameField.value.trim(),
+        batchCode: elements.batchCodeField.value.trim(),
+        equipmentName: elements.batchEquipmentField.value.trim(),
+        plannedFinalGravity: optionalNumberInput(elements.batchPlannedFgField.value),
+        finalGravity: optionalNumberInput(elements.batchFinalGravityField.value),
+        plannedVolumeLiters: optionalNumberInput(elements.batchPlannedVolumeField.value),
+        actualVolumeLiters: optionalNumberInput(elements.batchActualVolumeField.value),
+        summaryNotes: elements.batchSummaryField.value.trim(),
+        sensoryScore: optionalNumberInput(elements.batchSensoryScoreField.value),
+        sensoryNotes: elements.batchSensoryNotesField.value.trim(),
+      },
+    },
+    "Ficha do lote salva.",
+  );
+}
+
+async function handleBatchIngredientAdd(event) {
+  event.preventDefault();
+  if (state.fermentationBusy || !state.fermentation?.id || !elements.batchIngredientForm.reportValidity()) return;
+  const success = await mutateBatch(
+    `/v1/batches/${encodeURIComponent(state.fermentation.id)}/ingredients`,
+    {
+      method: "POST",
+      body: {
+        name: elements.ingredientNameInput.value.trim(),
+        category: elements.ingredientCategoryInput.value,
+        unit: elements.ingredientUnitInput.value,
+        plannedQuantity: optionalNumberInput(elements.ingredientPlannedQuantityInput.value),
+        actualQuantity: optionalNumberInput(elements.ingredientActualQuantityInput.value),
+        plannedCost: optionalNumberInput(elements.ingredientPlannedCostInput.value),
+        actualCost: optionalNumberInput(elements.ingredientActualCostInput.value),
+      },
+    },
+    "Ingrediente adicionado.",
+  );
+  if (success) elements.batchIngredientForm.reset();
+}
+
+async function handleBatchJournalAdd(event) {
+  event.preventDefault();
+  if (state.fermentationBusy || !state.fermentation?.id || !elements.batchJournalForm.reportValidity()) return;
+  const success = await mutateBatch(
+    `/v1/batches/${encodeURIComponent(state.fermentation.id)}/journal`,
+    {
+      method: "POST",
+      body: {
+        kind: elements.batchJournalKindInput.value,
+        occurredAt: epochFromDateTimeInput(elements.batchJournalDateInput.value),
+        title: elements.batchJournalTitleInput.value.trim(),
+        details: elements.batchJournalDetailsInput.value.trim(),
+      },
+    },
+    "Registro adicionado ao diário.",
+  );
+  if (success) {
+    elements.batchJournalForm.reset();
+    setDefaultDateTime(elements.batchJournalDateInput, null, true);
+  }
+}
+
+async function handleBatchAttachmentUpload(event) {
+  event.preventDefault();
+  const file = elements.batchAttachmentInput.files?.[0];
+  if (state.fermentationBusy || !state.fermentation?.id || !file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    showToast("O anexo deve ter no máximo 10 MB.");
+    return;
+  }
+  state.fermentationBusy = true;
+  renderFermentation();
+  try {
+    const response = await apiFile(
+      `/v1/batches/${encodeURIComponent(state.fermentation.id)}/attachments`,
+      { method: "POST", body: file, headers: { "Content-Type": file.type, "X-File-Name": encodeURIComponent(file.name) } },
+    );
+    acceptBatchResponse(response);
+    elements.batchAttachmentForm.reset();
+    showToast("Anexo enviado.");
+  } catch (error) {
+    showToast(humanError(error, "Não foi possível enviar o anexo."));
+  } finally {
+    state.fermentationBusy = false;
+    renderFermentation();
+  }
+}
+
+async function deleteBatchIngredient(ingredient) {
+  if (!window.confirm(`Excluir o ingrediente “${ingredient.name}”?`)) return;
+  await mutateBatch(`/v1/batches/${encodeURIComponent(state.fermentation.id)}/ingredients/${encodeURIComponent(ingredient.id)}`, { method: "DELETE" }, "Ingrediente excluído.");
+}
+
+async function deleteBatchJournalEntry(entry) {
+  if (!window.confirm(`Excluir o registro “${entry.title}”?`)) return;
+  await mutateBatch(`/v1/batches/${encodeURIComponent(state.fermentation.id)}/journal/${encodeURIComponent(entry.id)}`, { method: "DELETE" }, "Registro excluído.");
+}
+
+async function deleteBatchAttachment(attachment) {
+  if (!window.confirm(`Excluir o anexo “${attachment.fileName}”?`)) return;
+  await mutateBatch(`/v1/batches/${encodeURIComponent(state.fermentation.id)}/attachments/${encodeURIComponent(attachment.id)}`, { method: "DELETE" }, "Anexo excluído.");
+}
+
+async function downloadBatchAttachment(attachment) {
+  try {
+    const response = await apiFile(`/v1/batches/${encodeURIComponent(state.fermentation.id)}/attachments/${encodeURIComponent(attachment.id)}`);
+    const url = URL.createObjectURL(response);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = attachment.fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    showToast(humanError(error, "Não foi possível baixar o anexo."));
+  }
+}
+
+async function mutateBatch(path, options, successMessage) {
+  state.fermentationBusy = true;
+  renderFermentation();
+  try {
+    const response = await api(path, options);
+    acceptBatchResponse(response);
+    showToast(successMessage);
+    return true;
+  } catch (error) {
+    showToast(humanError(error, "Não foi possível atualizar o lote."));
+    return false;
+  } finally {
+    state.fermentationBusy = false;
+    renderFermentation();
+  }
+}
+
+function acceptBatchResponse(response) {
+  if (!response?.batch) return;
+  state.fermentation = response.batch;
+  state.selectedBatchId = response.batch.id;
+  state.batchFormId = null;
+  const index = state.batches.findIndex((batch) => batch.id === response.batch.id);
+  if (index >= 0) state.batches[index] = response.batch;
+  else state.batches.unshift(response.batch);
+  renderBatchLibrary();
+}
+
+function inputNumber(value, digits) {
+  const number = Number(value);
+  return value === null || value === undefined || !Number.isFinite(number) ? "" : number.toFixed(digits);
+}
+
+function formatOptionalNumber(value, digits) {
+  const number = Number(value);
+  return value === null || value === undefined || !Number.isFinite(number) ? "—" : formatNumber(number, digits);
+}
+
+function formatPercent(value, digits) {
+  return value === null || value === undefined ? "—" : `${formatNumber(value, digits)}%`;
+}
+
+function formatCurrency(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "—";
+}
+
+function formatFileSize(bytes) {
+  const value = Number(bytes) || 0;
+  if (value >= 1024 * 1024) return `${formatNumber(value / (1024 * 1024), 1)} MB`;
+  if (value >= 1024) return `${formatNumber(value / 1024, 1)} kB`;
+  return `${value} B`;
 }
 
 function renderUser() {
@@ -1231,6 +1689,8 @@ async function selectDevice(deviceId) {
   resetChartViewport();
   state.fermentation = null;
   state.fermentationError = null;
+  state.selectedBatchId = null;
+  state.batchFormId = null;
   state.showNewFermentationForm = false;
   state.formDeviceId = null;
   state.configurationDirty = false;
@@ -1343,11 +1803,13 @@ function renderProfileProgress() {
 function renderFermentation() {
   const fermentation = state.fermentation;
   const viewer = state.user?.memberships?.[0]?.role === "viewer";
+  renderBatchLibrary();
   const showStart = !fermentation || state.showNewFermentationForm;
   elements.fermentationStartView.hidden = !showStart;
   elements.fermentationTrackingView.hidden = showStart;
 
   if (showStart) {
+    renderBatchRecipeOptions();
     setDefaultDateTime(elements.fermentationStartedAtInput);
     setFormDisabled(
       elements.fermentationStartForm,
@@ -1367,12 +1829,12 @@ function renderFermentation() {
   const lastReading = readings.at(-1) || null;
   const originalGravity = Number(fermentation.originalGravity);
   const currentGravity = Number(lastReading?.gravity);
-  const attenuation = Number.isFinite(currentGravity) && originalGravity > 1
+  const attenuation = fermentation.metrics?.attenuation ?? (Number.isFinite(currentGravity) && originalGravity > 1
     ? Math.max(0, ((originalGravity - currentGravity) / (originalGravity - 1)) * 100)
-    : null;
-  const estimatedAbv = Number.isFinite(currentGravity)
+    : null);
+  const estimatedAbv = fermentation.metrics?.abv ?? (Number.isFinite(currentGravity)
     ? Math.max(0, (originalGravity - currentGravity) * 131.25)
-    : null;
+    : null);
 
   elements.fermentationName.textContent = fermentation.name || "Fermentação";
   elements.fermentationStartedAt.textContent = active
@@ -1386,7 +1848,9 @@ function renderFermentation() {
   elements.finishFermentationButton.hidden = !active;
   elements.finishFermentationButton.disabled = viewer || state.fermentationBusy;
   elements.newFermentationButton.hidden = active;
-  elements.newFermentationButton.disabled = viewer || state.fermentationBusy;
+  elements.newFermentationButton.disabled = viewer || state.fermentationBusy || state.batches.some(
+    (batch) => batch.deviceId === state.selectedDeviceId && batch.active,
+  );
   elements.gravityReadingForm.hidden = !active;
   setFormDisabled(elements.gravityReadingForm, viewer || state.fermentationBusy || !active);
   elements.addGravityReadingButton.textContent = state.fermentationBusy ? "SALVANDO…" : "ADICIONAR LEITURA";
@@ -1400,6 +1864,7 @@ function renderFermentation() {
   elements.gravityReadingCount.textContent = String(readings.length);
   renderGravityReadings(readings, viewer);
   renderGravityChart(fermentation);
+  renderBatchDetails(fermentation, viewer);
 }
 
 function renderGravityReadings(readings, viewer) {
@@ -1436,6 +1901,8 @@ async function handleFermentationStart(event) {
   const name = elements.fermentationNameInput.value.trim();
   const originalGravity = parseGravityInput(elements.fermentationOgInput.value);
   const startedAt = epochFromDateTimeInput(elements.fermentationStartedAtInput.value);
+  const plannedFinalGravity = optionalNumberInput(elements.batchPlannedFgInput.value);
+  const plannedVolumeLiters = optionalNumberInput(elements.batchPlannedVolumeInput.value);
   if (!validGravity(originalGravity)) {
     showToast("Informe uma OG entre 0.990 e 1.200, com três casas decimais.");
     return;
@@ -1450,13 +1917,27 @@ async function handleFermentationStart(event) {
   try {
     const response = await api(
       `/v1/devices/${encodeURIComponent(state.selectedDeviceId)}/fermentation`,
-      { method: "POST", body: { name, originalGravity, startedAt } },
+      {
+        method: "POST",
+        body: {
+          name,
+          originalGravity,
+          startedAt,
+          batchCode: elements.batchCodeInput.value.trim(),
+          recipeId: elements.batchRecipeInput.value || null,
+          equipmentName: elements.batchEquipmentInput.value.trim(),
+          plannedFinalGravity,
+          plannedVolumeLiters,
+        },
+      },
     );
-    state.fermentation = response.fermentation;
+    state.selectedBatchId = response.fermentation?.id || null;
     state.fermentationError = null;
     state.showNewFermentationForm = false;
+    state.batchFormId = null;
     elements.fermentationStartForm.reset();
     setDefaultDateTime(elements.fermentationStartedAtInput, null, true);
+    await loadFermentation();
     showToast("Acompanhamento da fermentação iniciado.");
   } catch (error) {
     showToast(humanError(error, "Não foi possível iniciar o acompanhamento."));
@@ -1484,18 +1965,18 @@ async function handleGravityReading(event) {
   state.fermentationBusy = true;
   renderFermentation();
   try {
-    const response = await api(
+    await api(
       `/v1/devices/${encodeURIComponent(state.selectedDeviceId)}/fermentation/readings`,
       {
         method: "POST",
         body: { gravity, measuredAt, note: elements.gravityNoteInput.value.trim() },
       },
     );
-    state.fermentation = response.fermentation;
     state.fermentationError = null;
     elements.gravityReadingInput.value = "";
     elements.gravityNoteInput.value = "";
     setDefaultDateTime(elements.gravityMeasuredAtInput, null, true);
+    await loadFermentation();
     showToast("Leitura adicionada à curva de densidade.");
   } catch (error) {
     showToast(humanError(error, "Não foi possível adicionar a leitura."));
@@ -1511,12 +1992,12 @@ async function deleteGravityReading(reading) {
   state.fermentationBusy = true;
   renderFermentation();
   try {
-    const response = await api(
+    await api(
       `/v1/devices/${encodeURIComponent(state.selectedDeviceId)}/fermentation/readings/${encodeURIComponent(reading.id)}`,
       { method: "DELETE" },
     );
-    state.fermentation = response.fermentation;
     state.fermentationError = null;
+    await loadFermentation();
     showToast("Leitura excluída.");
   } catch (error) {
     showToast(humanError(error, "Não foi possível excluir a leitura."));
@@ -1532,12 +2013,21 @@ async function finishFermentationTracking() {
   state.fermentationBusy = true;
   renderFermentation();
   try {
-    const response = await api(
+    await api(
       `/v1/devices/${encodeURIComponent(state.selectedDeviceId)}/fermentation/finish`,
-      { method: "POST", body: {} },
+      {
+        method: "POST",
+        body: {
+          finalGravity: optionalNumberInput(elements.batchFinalGravityField.value),
+          actualVolumeLiters: optionalNumberInput(elements.batchActualVolumeField.value),
+          sensoryScore: optionalNumberInput(elements.batchSensoryScoreField.value),
+          sensoryNotes: elements.batchSensoryNotesField.value.trim(),
+          summaryNotes: elements.batchSummaryField.value.trim(),
+        },
+      },
     );
-    state.fermentation = response.fermentation;
     state.fermentationError = null;
+    await loadFermentation();
     showToast("Acompanhamento encerrado.");
   } catch (error) {
     showToast(humanError(error, "Não foi possível encerrar o acompanhamento."));
@@ -1551,6 +2041,7 @@ function showNewFermentationForm() {
   state.showNewFermentationForm = true;
   elements.fermentationStartForm.reset();
   elements.fermentationNameInput.value = state.latest?.state?.profile?.name || "";
+  renderBatchRecipeOptions();
   setDefaultDateTime(elements.fermentationStartedAtInput, null, true);
   renderFermentation();
   elements.fermentationNameInput.focus();
@@ -1563,6 +2054,11 @@ function parseGravityInput(value) {
 function validGravity(value) {
   return Number.isFinite(value) && value >= 0.990 && value <= 1.200 &&
     Math.abs(value * 1000 - Math.round(value * 1000)) < 0.000_001;
+}
+
+function optionalNumberInput(value) {
+  const normalized = String(value ?? "").trim().replace(",", ".");
+  return normalized === "" ? null : Number(normalized);
 }
 
 function formatGravity(value) {
@@ -2963,6 +3459,9 @@ function renderNoDevices() {
   resetChartViewport();
   state.fermentation = null;
   state.fermentationError = null;
+  state.batches = [];
+  state.selectedBatchId = null;
+  state.batchFormId = null;
   state.showNewFermentationForm = false;
   document.querySelector("main.dashboard")?.classList.add("no-devices");
   elements.emptyDeviceView.hidden = false;
@@ -3184,6 +3683,36 @@ async function api(path, options = {}) {
   }
 
   return payload;
+}
+
+async function apiFile(path, options = {}) {
+  const headers = new Headers(options.headers || {});
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      method: options.method || "GET",
+      credentials: "include",
+      cache: "no-store",
+      headers,
+      body: options.body,
+    });
+  } catch {
+    throw new AppError(0, "NETWORK_ERROR", "Não foi possível alcançar o Maltworks Cloud.");
+  }
+
+  const contentType = response.headers.get("Content-Type") || "";
+  if (!response.ok) {
+    let payload = null;
+    if (contentType.includes("application/json")) {
+      try { payload = await response.json(); } catch { /* Corpo inválido. */ }
+    }
+    throw new AppError(
+      response.status,
+      payload?.error?.code || "REQUEST_FAILED",
+      payload?.error?.message || `Falha na requisição (HTTP ${response.status}).`,
+    );
+  }
+  return contentType.includes("application/json") ? response.json() : response.blob();
 }
 
 class AppError extends Error {

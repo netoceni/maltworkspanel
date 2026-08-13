@@ -7,7 +7,7 @@
     <meta name="description" content="Painel de monitoramento e controle seguro dos controladores Maltworks." />
     <title>Maltworks Cloud</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles-5.13.0.css?v=5.14.0" />
+    <link rel="stylesheet" href="/styles-5.13.0.css?v=5.15.0" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -301,7 +301,7 @@
           <button type="button" role="tab" data-tab="dashboard" aria-selected="true" class="active">DASHBOARD</button>
           <button type="button" role="tab" data-tab="control" aria-selected="false">CONTROLE</button>
           <button type="button" role="tab" data-tab="recipes" aria-selected="false">RECEITAS E RAMPAS</button>
-          <button type="button" role="tab" data-tab="gravity" aria-selected="false">DENSIDADE</button>
+          <button type="button" role="tab" data-tab="gravity" aria-selected="false">LOTES</button>
           <button type="button" role="tab" data-tab="calibration" aria-selected="false">CALIBRAÇÃO</button>
           <button type="button" role="tab" data-tab="alarms" aria-selected="false">ALARMES</button>
           <button type="button" role="tab" data-tab="history" aria-selected="false">HISTÓRICO</button>
@@ -426,6 +426,22 @@
         </section>
 
         <section class="tab-panel" data-tab-panel="gravity" role="tabpanel" hidden>
+          <section class="chart-card tab-card-first batch-library-card">
+            <div class="section-heading batch-library-heading">
+              <div><p class="eyebrow">HISTÓRICO DA CERVEJARIA</p><h2>Lotes de produção</h2><p class="section-copy">Consulte lotes ativos e encerrados, compare resultados e preserve a ficha real de cada produção.</p></div>
+              <button id="newBatchButton" class="secondary-button" type="button">NOVO LOTE</button>
+            </div>
+            <div class="batch-library-controls">
+              <label>LOTE SELECIONADO<select id="batchSelector"><option value="">Nenhum lote cadastrado</option></select></label>
+              <label>COMPARAR RECEITA<select id="batchCompareRecipe"><option value="">Selecione uma receita</option></select></label>
+              <button id="compareBatchesButton" class="secondary-button" type="button">COMPARAR LOTES</button>
+            </div>
+            <div id="batchComparison" class="batch-comparison" hidden>
+              <div class="subsection-title"><span>PLANEJADO × REALIZADO</span><b id="batchComparisonCount">0</b></div>
+              <div class="batch-comparison-scroll"><table><thead><tr><th>Lote</th><th>OG / FG</th><th>ABV</th><th>Atenuação</th><th>Volume</th><th>Custo</th><th>Nota</th></tr></thead><tbody id="batchComparisonBody"></tbody></table></div>
+            </div>
+          </section>
+
           <section id="fermentationStartView" class="chart-card tab-card-first gravity-start-card">
             <div class="section-heading">
               <div><p class="eyebrow">ACOMPANHAMENTO MANUAL</p><h2>Curva de densidade</h2><p class="section-copy">Informe a OG do lote e adicione as leituras feitas com densímetro. Para refratômetro, informe a leitura em SG já corrigida pelo efeito do álcool.</p></div>
@@ -434,7 +450,12 @@
             <form id="fermentationStartForm" class="cloud-form fermentation-start-form">
               <div class="fermentation-start-grid">
                 <label>LOTE / CERVEJA<input id="fermentationNameInput" type="text" minlength="2" maxlength="80" placeholder="Ex.: APA lote 0002" required /></label>
+                <label>CÓDIGO DO LOTE<input id="batchCodeInput" type="text" maxlength="40" placeholder="Ex.: APA-2026-002" /></label>
+                <label>RECEITA<select id="batchRecipeInput"><option value="">Sem receita vinculada</option></select></label>
+                <label>EQUIPAMENTO<input id="batchEquipmentInput" type="text" maxlength="120" placeholder="Ex.: Fermentador inox 30 L" /></label>
                 <label>DENSIDADE ORIGINAL (OG)<div class="field-with-unit gravity-field"><input id="fermentationOgInput" type="number" min="0.990" max="1.200" step="0.001" inputmode="decimal" placeholder="1.052" required /><span>SG</span></div></label>
+                <label>FG PLANEJADA<div class="field-with-unit gravity-field"><input id="batchPlannedFgInput" type="number" min="0.990" max="1.200" step="0.001" inputmode="decimal" placeholder="1.012" /><span>SG</span></div></label>
+                <label>VOLUME PLANEJADO<div class="field-with-unit"><input id="batchPlannedVolumeInput" type="number" min="0.1" max="100000" step="0.1" inputmode="decimal" placeholder="20" /><span>L</span></div></label>
                 <label>INÍCIO DA FERMENTAÇÃO<input id="fermentationStartedAtInput" type="datetime-local" required /></label>
               </div>
               <button id="startFermentationButton" class="primary-action-button" type="submit">INICIAR ACOMPANHAMENTO</button>
@@ -456,6 +477,75 @@
               </section>
               <div class="legend gravity-legend"><span><i class="legend-gravity"></i>DENSIDADE</span><span><i class="legend-og"></i>OG</span></div>
               <div class="chart-wrap gravity-chart-wrap"><svg id="gravityChart" viewBox="0 0 900 320" role="img" aria-label="Gráfico da densidade manual"><g id="gravityChartGrid"></g><path id="gravityOgPath" class="chart-line gravity-og-line" d=""></path><path id="gravityPath" class="chart-line gravity-line" d=""></path><g id="gravityPoints"></g><g id="gravityChartLabels"></g></svg><div id="gravityChartEmpty" class="chart-empty">Adicione a primeira leitura para formar a curva.</div></div>
+            </section>
+
+            <section class="batch-details-grid">
+              <article class="detail-card batch-sheet-card">
+                <div class="section-heading compact"><div><p class="eyebrow">FICHA DO LOTE</p><h2>Planejado e realizado</h2></div><span id="batchRecipeVersion" class="outline-badge neutral">SEM RECEITA</span></div>
+                <form id="batchDetailsForm" class="cloud-form">
+                  <div class="batch-form-grid">
+                    <label>NOME<input id="batchNameField" minlength="2" maxlength="80" required /></label>
+                    <label>CÓDIGO<input id="batchCodeField" maxlength="40" /></label>
+                    <label>CONTROLADOR<input id="batchControllerField" readonly /></label>
+                    <label>EQUIPAMENTO<input id="batchEquipmentField" maxlength="120" /></label>
+                    <label>FG PLANEJADA<input id="batchPlannedFgField" type="number" min="0.990" max="1.200" step="0.001" /></label>
+                    <label>FG REAL<input id="batchFinalGravityField" type="number" min="0.990" max="1.200" step="0.001" /></label>
+                    <label>VOLUME PLANEJADO (L)<input id="batchPlannedVolumeField" type="number" min="0.1" max="100000" step="0.1" /></label>
+                    <label>VOLUME REAL (L)<input id="batchActualVolumeField" type="number" min="0.1" max="100000" step="0.1" /></label>
+                  </div>
+                  <label>RESUMO E RESULTADO<textarea id="batchSummaryField" maxlength="4000" rows="3" placeholder="Decisões, desvios e resultado final do lote"></textarea></label>
+                  <div class="batch-form-grid sensory-grid">
+                    <label>NOTA SENSORIAL (0–100)<input id="batchSensoryScoreField" type="number" min="0" max="100" step="1" /></label>
+                    <label>AVALIAÇÃO SENSORIAL<textarea id="batchSensoryNotesField" maxlength="4000" rows="3" placeholder="Aroma, sabor, aparência e sensação de boca"></textarea></label>
+                  </div>
+                  <button id="saveBatchDetailsButton" class="primary-action-button" type="submit">SALVAR FICHA</button>
+                </form>
+                <div id="batchRecipeSnapshot" class="batch-recipe-snapshot"></div>
+              </article>
+
+              <article class="detail-card batch-cost-card">
+                <div class="section-heading compact"><div><p class="eyebrow">INSUMOS E CUSTOS</p><h2>Ingredientes</h2></div><b id="batchIngredientCount" class="count-badge">0</b></div>
+                <div class="batch-cost-summary"><span>Planejado <b id="batchPlannedCost">R$ 0,00</b></span><span>Real <b id="batchActualCost">R$ 0,00</b></span><span>Por litro <b id="batchCostPerLiter">—</b></span></div>
+                <form id="batchIngredientForm" class="cloud-form compact-batch-form">
+                  <div class="ingredient-form-grid">
+                    <label>INGREDIENTE<input id="ingredientNameInput" maxlength="120" required /></label>
+                    <label>CATEGORIA<select id="ingredientCategoryInput"><option value="malte">Malte</option><option value="lupulo">Lúpulo</option><option value="levedura">Levedura</option><option value="adjunto">Adjunto</option><option value="agua">Água</option><option value="embalagem">Embalagem</option><option value="outro">Outro</option></select></label>
+                    <label>UNIDADE<select id="ingredientUnitInput"><option value="kg">kg</option><option value="g">g</option><option value="l">L</option><option value="ml">ml</option><option value="un">un</option></select></label>
+                    <label>QTD. PLANEJADA<input id="ingredientPlannedQuantityInput" type="number" min="0" step="0.001" required /></label>
+                    <label>QTD. REAL<input id="ingredientActualQuantityInput" type="number" min="0" step="0.001" /></label>
+                    <label>CUSTO PLANEJADO (R$)<input id="ingredientPlannedCostInput" type="number" min="0" step="0.01" required /></label>
+                    <label>CUSTO REAL (R$)<input id="ingredientActualCostInput" type="number" min="0" step="0.01" /></label>
+                  </div>
+                  <button id="addBatchIngredientButton" class="secondary-button" type="submit">ADICIONAR INGREDIENTE</button>
+                </form>
+                <div id="batchIngredientList" class="batch-item-list"></div>
+                <p id="batchIngredientEmpty" class="recipe-empty">Nenhum ingrediente registrado.</p>
+              </article>
+
+              <article class="detail-card batch-journal-card">
+                <div class="section-heading compact"><div><p class="eyebrow">DIÁRIO DO LOTE</p><h2>Observações e ocorrências</h2></div><b id="batchJournalCount" class="count-badge">0</b></div>
+                <form id="batchJournalForm" class="cloud-form compact-batch-form">
+                  <div class="batch-form-grid">
+                    <label>TIPO<select id="batchJournalKindInput"><option value="observacao">Observação</option><option value="ocorrencia">Ocorrência</option></select></label>
+                    <label>DATA E HORA<input id="batchJournalDateInput" type="datetime-local" required /></label>
+                  </div>
+                  <label>TÍTULO<input id="batchJournalTitleInput" maxlength="120" required /></label>
+                  <label>DETALHES<textarea id="batchJournalDetailsInput" maxlength="4000" rows="2"></textarea></label>
+                  <button id="addBatchJournalButton" class="secondary-button" type="submit">REGISTRAR</button>
+                </form>
+                <div id="batchJournalList" class="batch-item-list"></div>
+                <p id="batchJournalEmpty" class="recipe-empty">Nenhuma observação ou ocorrência.</p>
+              </article>
+
+              <article class="detail-card batch-attachments-card">
+                <div class="section-heading compact"><div><p class="eyebrow">EVIDÊNCIAS</p><h2>Fotos e anexos</h2></div><b id="batchAttachmentCount" class="count-badge">0</b></div>
+                <form id="batchAttachmentForm" class="cloud-form compact-batch-form">
+                  <label>ARQUIVO — ATÉ 10 MB<input id="batchAttachmentInput" type="file" accept="image/jpeg,image/png,image/webp,application/pdf,text/plain" required /></label>
+                  <button id="uploadBatchAttachmentButton" class="secondary-button" type="submit">ENVIAR ANEXO</button>
+                </form>
+                <div id="batchAttachmentList" class="batch-item-list attachment-list"></div>
+                <p id="batchAttachmentEmpty" class="recipe-empty">Nenhum anexo registrado.</p>
+              </article>
             </section>
 
             <section class="detail-grid gravity-entry-grid">
@@ -586,6 +676,6 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app-5.13.0.js?v=5.14.0" defer></script>
+    <script src="/app-5.13.0.js?v=5.15.0" defer></script>
   </body>
 </html>
