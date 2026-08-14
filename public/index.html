@@ -7,7 +7,7 @@
     <meta name="description" content="Painel de monitoramento e controle seguro dos controladores Maltworks." />
     <title>Maltworks Cloud</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles-5.13.0.css?v=5.15.0" />
+    <link rel="stylesheet" href="/styles-5.13.0.css?v=5.16.0" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -655,6 +655,12 @@
 
         <section class="tab-panel" data-tab-panel="device" role="tabpanel" hidden>
           <section class="detail-grid device-grid">
+            <article class="detail-card firmware-update-card">
+              <div class="section-heading compact"><div><p class="eyebrow">ATUALIZAÇÃO</p><h2>Firmware</h2></div><span id="firmwareUpdateBadge" class="outline-badge">VERIFICANDO</span></div>
+              <p id="firmwareUpdateStatus" class="firmware-update-status">Consultando a versão mais recente disponível…</p>
+              <button id="checkFirmwareButton" class="secondary-button" type="button">BUSCAR FIRMWARE MAIS RECENTE</button>
+              <small class="firmware-update-note">A solicitação é recebida automaticamente pelo controlador. Durante a instalação, ele desliga os relés e reinicia sozinho.</small>
+            </article>
             <article class="detail-card">
               <div class="section-heading compact"><div><p class="eyebrow">DISPOSITIVO</p><h2>Sistema</h2></div><span id="firmwareBadge" class="outline-badge">—</span></div>
               <dl class="data-list"><div><dt>Device ID</dt><dd id="systemDeviceId">—</dd></div><div><dt>Boot ID</dt><dd id="bootId">—</dd></div><div><dt>Uptime</dt><dd id="uptime">—</dd></div><div><dt>Sequência</dt><dd id="sequence">—</dd></div></dl>
@@ -676,6 +682,6 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app-5.13.0.js?v=5.15.0" defer></script>
+    <script src="/app-5.13.0.js?v=5.16.0" defer></script>
   </body>
 </html>

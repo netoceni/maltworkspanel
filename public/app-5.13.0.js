@@ -16,6 +16,8 @@ const state = {
   devices: [],
   selectedDeviceId: null,
   latest: null,
+  firmwareStatus: null,
+  firmwareBusy: false,
   history: [],
   historyFrom: null,
   historyTo: null,
@@ -117,7 +119,8 @@ function cacheElements() {
     "signalQuality", "temperatureChart", "chartWrap", "chartGrid", "chartLabels", "targetPath",
     "temperaturePath", "chartEmpty", "profileBadge", "profileName", "profileStages",
     "profileRemaining", "compressorProtection", "alarmCard", "alarmBadge", "alarmSymbol",
-    "alarmTitle", "alarmText", "firmwareBadge", "systemDeviceId", "bootId", "uptime",
+    "alarmTitle", "alarmText", "firmwareBadge", "firmwareUpdateBadge", "firmwareUpdateStatus",
+    "checkFirmwareButton", "systemDeviceId", "bootId", "uptime",
     "sequence", "remoteControlCard", "setpointForm", "remoteSetpoint",
     "setpointCommandButton", "commandBadge", "commandStatusText", "toast",
     "newRecipeButton", "recipeCount", "recipeList", "recipeEmpty", "recipeForm",
@@ -212,6 +215,7 @@ function bindEvents() {
   });
   elements.logoutButton.addEventListener("click", handleLogout);
   elements.refreshButton.addEventListener("click", () => void refreshAll(true));
+  elements.checkFirmwareButton.addEventListener("click", () => void handleFirmwareCheck());
   elements.notificationButton.addEventListener("click", toggleNotificationPanel);
   elements.closeNotificationButton.addEventListener("click", closeNotificationPanel);
   elements.markAllNotificationsReadButton.addEventListener("click", () => void markAllNotificationsRead());
@@ -434,6 +438,7 @@ async function handleLogout() {
   state.fermentation = null;
   state.fermentationError = null;
   state.latest = null;
+  state.firmwareStatus = null;
   state.notifications = [];
   state.notificationUnreadCount = 0;
   state.notificationPreferences = null;
@@ -448,7 +453,7 @@ async function enterDashboard() {
   renderUser();
   await Promise.all([loadDevices(), loadRecipes(), loadNotifications(), loadNotificationPreferences()]);
   if (state.selectedDeviceId) {
-    await Promise.all([loadLatest(), loadHistory(false), loadFermentation()]);
+    await Promise.all([loadLatest(), loadHistory(false), loadFermentation(), loadFirmwareStatus()]);
   }
   selectTab(state.activeTab);
   startTimers();
@@ -511,7 +516,7 @@ async function handleDeviceClaim(event) {
     state.selectedDeviceId = response.device.id;
     writeLocalPreference("mw_selected_device", state.selectedDeviceId);
     await loadDevices();
-    await Promise.all([loadLatest(), loadHistory(false), loadFermentation()]);
+    await Promise.all([loadLatest(), loadHistory(false), loadFermentation(), loadFirmwareStatus()]);
     elements.claimForm.hidden = true;
     elements.claimSuccess.hidden = false;
     elements.claimSuccessCloseButton.focus();
@@ -663,6 +668,7 @@ async function handleDeviceDelete(event) {
     if (state.selectedDeviceId === deviceId) {
       state.selectedDeviceId = null;
       state.latest = null;
+      state.firmwareStatus = null;
       state.history = [];
       state.fermentation = null;
       removeLocalPreference("mw_selected_device");
@@ -778,7 +784,7 @@ async function refreshAll(showConfirmation) {
   try {
     await Promise.all([loadDevices(), loadRecipes(), loadNotifications()]);
     if (!state.selectedDeviceId) return;
-    await Promise.all([loadLatest(), loadHistory(false), loadFermentation()]);
+    await Promise.all([loadLatest(), loadHistory(false), loadFermentation(), loadFirmwareStatus()]);
     if (showConfirmation) showToast("Dados atualizados.");
   } catch (error) {
     if (isAuthenticationError(error)) {
@@ -814,6 +820,7 @@ async function refreshSupportingData() {
   try {
     await loadDevices();
     await loadFermentation();
+    await loadFirmwareStatus();
   } catch (error) {
     handleRefreshError(error);
   } finally {
@@ -864,6 +871,91 @@ async function loadLatest() {
   }
   renderLatest();
   announceCommandTransition(previousCommand, response.latestCommand);
+}
+
+async function loadFirmwareStatus() {
+  if (!state.selectedDeviceId) return;
+  const organizationId = state.user?.memberships?.[0]?.organizationId;
+  const query = organizationId ? `?organizationId=${encodeURIComponent(organizationId)}` : "";
+  const response = await api(
+    `/v1/devices/${encodeURIComponent(state.selectedDeviceId)}/firmware${query}`,
+  );
+  state.firmwareStatus = response.firmware || null;
+  renderFirmwareStatus();
+}
+
+async function handleFirmwareCheck() {
+  if (!state.selectedDeviceId || state.firmwareBusy) return;
+  state.firmwareBusy = true;
+  renderFirmwareStatus();
+  try {
+    await loadFirmwareStatus();
+    const firmware = state.firmwareStatus;
+    const active = firmware?.assignment && ["assigned", "downloading", "installing", "rebooting", "validating"]
+      .includes(firmware.assignment.status);
+    if (active) {
+      showToast(`Atualização para ${firmware.assignment.targetVersion} já está em andamento.`);
+      return;
+    }
+    if (!firmware?.updateAvailable) {
+      showToast("Este controlador já está na versão mais recente.");
+      return;
+    }
+    const device = state.devices.find((item) => item.id === state.selectedDeviceId);
+    const confirmed = window.confirm(
+      `Atualizar ${device?.name || state.selectedDeviceId} de ${firmware.currentVersion} para ${firmware.latestVersion}?\n\n` +
+      "O controlador buscará a atualização automaticamente, desligará os relés durante a instalação e reiniciará sozinho.",
+    );
+    if (!confirmed) return;
+    const organizationId = state.user?.memberships?.[0]?.organizationId;
+    const response = await api(
+      `/v1/devices/${encodeURIComponent(state.selectedDeviceId)}/firmware/update`,
+      { method: "POST", body: { organizationId } },
+    );
+    state.firmwareStatus.assignment = response.assignment;
+    renderFirmwareStatus();
+    showToast(response.alreadyScheduled
+      ? "A atualização já estava agendada."
+      : "Atualização solicitada. O controlador iniciará automaticamente.");
+  } catch (error) {
+    showToast(humanError(error, "Não foi possível solicitar a atualização."));
+  } finally {
+    state.firmwareBusy = false;
+    renderFirmwareStatus();
+  }
+}
+
+function renderFirmwareStatus() {
+  const firmware = state.firmwareStatus;
+  const assignment = firmware?.assignment;
+  const viewer = state.user?.memberships?.[0]?.role === "viewer";
+  const active = assignment && ["assigned", "downloading", "installing", "rebooting", "validating"]
+    .includes(assignment.status);
+  const statusLabels = {
+    assigned: "AGENDADA",
+    downloading: "BAIXANDO",
+    installing: "INSTALANDO",
+    rebooting: "REINICIANDO",
+    validating: "VALIDANDO",
+  };
+
+  if (!firmware) {
+    elements.firmwareUpdateBadge.textContent = "VERIFICANDO";
+    elements.firmwareUpdateStatus.textContent = "Consultando a versão mais recente disponível…";
+  } else if (active) {
+    elements.firmwareUpdateBadge.textContent = statusLabels[assignment.status] || "EM ANDAMENTO";
+    elements.firmwareUpdateStatus.textContent = `Atualização para ${assignment.targetVersion}: ${Number(assignment.progress || 0)}%.`;
+  } else if (firmware.updateAvailable) {
+    elements.firmwareUpdateBadge.textContent = "DISPONÍVEL";
+    elements.firmwareUpdateStatus.textContent = `Versão instalada: ${firmware.currentVersion}. Nova versão: ${firmware.latestVersion}.`;
+  } else {
+    elements.firmwareUpdateBadge.textContent = "ATUALIZADO";
+    elements.firmwareUpdateStatus.textContent = `Versão ${firmware.currentVersion || "—"} instalada. Nenhuma atualização pendente.`;
+  }
+  elements.checkFirmwareButton.disabled = !state.selectedDeviceId || state.firmwareBusy || viewer || Boolean(active);
+  elements.checkFirmwareButton.textContent = state.firmwareBusy
+    ? "VERIFICANDO…"
+    : active ? "ATUALIZAÇÃO EM ANDAMENTO" : "BUSCAR FIRMWARE MAIS RECENTE";
 }
 
 async function loadHistory(showConfirmation) {
@@ -1453,6 +1545,7 @@ async function handleNotificationClick(event) {
     if (notification.deviceId && state.devices.some((device) => device.id === notification.deviceId)) {
       await selectDevice(notification.deviceId);
     }
+    if (notification.type === "firmware_available") selectTab("device");
     closeNotificationPanel();
   } catch (error) {
     showToast(humanError(error, "Não foi possível abrir a notificação."));
@@ -1685,6 +1778,7 @@ async function selectDevice(deviceId) {
   writeLocalPreference("mw_selected_device", deviceId);
   renderDeviceList();
   state.latest = null;
+  state.firmwareStatus = null;
   state.history = [];
   resetChartViewport();
   state.fermentation = null;
@@ -1699,6 +1793,7 @@ async function selectDevice(deviceId) {
   state.pendingConfigurationCommandId = null;
   state.pendingConfigurationScope = null;
   renderLoadingDevice();
+  renderFirmwareStatus();
   await refreshAll(false);
 }
 
@@ -3437,6 +3532,8 @@ function exportHistoryCsv() {
 }
 
 function renderLoadingDevice() {
+  state.firmwareStatus = null;
+  renderFirmwareStatus();
   elements.deviceName.textContent = "Carregando…";
   elements.deviceMeta.textContent = "—";
   elements.lastUpdate.textContent = "—";
@@ -3455,6 +3552,8 @@ function renderLoadingDevice() {
 
 function renderNoDevices() {
   state.latest = null;
+  state.firmwareStatus = null;
+  renderFirmwareStatus();
   state.history = [];
   resetChartViewport();
   state.fermentation = null;
