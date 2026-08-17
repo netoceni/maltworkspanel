@@ -163,6 +163,10 @@ input:focus-visible {
 .faq-list p { margin: 0; padding: 0 50px 28px 0; color: var(--muted); line-height: 1.7; }
 .access-section { min-height: 820px; border-top: 1px solid var(--line); scroll-margin-top: 74px; }
 .public-footer { display: flex; align-items: center; justify-content: space-between; gap: 25px; padding: 38px clamp(24px, 7vw, 110px); border-top: 1px solid var(--line); color: var(--muted); font-family: var(--mono); font-size: .56rem; letter-spacing: .1em; }
+.preview-environment-notice { display: grid; gap: 6px; margin: 18px 0; padding: 14px 16px; border: 1px solid rgb(200 148 53 / 35%); border-radius: 8px; color: var(--muted); background: rgb(200 148 53 / 8%); font-size: .76rem; line-height: 1.45; }
+.preview-environment-notice b { color: var(--gold-bright); font-family: var(--mono); font-size: .58rem; letter-spacing: .11em; }
+.preview-environment-notice a { color: var(--cream); }
+.login-card :disabled { cursor: not-allowed; opacity: .48; }
 
 @media (max-width: 1050px) {
   .public-nav { display: none; }
