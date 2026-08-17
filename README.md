@@ -1,4 +1,10 @@
-# Maltworks Cloud Panel — versão 5.17.0
+# Maltworks Cloud Panel — versão 5.17.1
+
+## Correção 5.17.1
+
+- previews em `pages.dev` não consultam a API nem exibem erro de conexão;
+- login e cadastro ficam desabilitados no preview, com acesso indicado para o domínio oficial;
+- política CORS e cookies seguros da produção permanecem inalterados.
 
 ## Novidades 5.17.0
 
