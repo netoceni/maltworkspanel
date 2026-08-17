@@ -1,4 +1,14 @@
-# Maltworks Cloud Panel — Fase 5.13.0
+# Maltworks Cloud Panel — versão 5.17.0
+
+## Novidades 5.17.0
+
+- landing page pública completa com apresentação do projeto Maltworks Cloud;
+- navegação para projeto, equipamentos, planos, dúvidas e login;
+- vitrine de pré-venda para Controller, Complete e Dens com preços estimados;
+- comparação dos planos Essencial, Plus e Pro;
+- fluxo de interesse comercial integrado ao formulário existente;
+- login, cadastro e painel operacional preservados na mesma aplicação;
+- layout responsivo alinhado à identidade industrial da Maltworks.
 
 ## Novidades 5.13.0
 
