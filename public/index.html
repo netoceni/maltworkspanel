@@ -7,7 +7,7 @@
     <meta name="description" content="Controle inteligente de fermentação com execução local, monitoramento cloud, receitas, alarmes e densidade em tempo real." />
     <title>Maltworks Cloud</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles-5.13.0.css?v=5.17.1" />
+    <link rel="stylesheet" href="/styles-5.13.0.css?v=5.18.0" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -221,6 +221,15 @@
 
           <label for="contactPhone">Celular / WhatsApp</label>
           <input id="contactPhone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="24" placeholder="(11) 99999-9999" required />
+
+          <div class="signup-grid">
+            <label for="contactCity">Cidade
+              <input id="contactCity" name="city" type="text" autocomplete="address-level2" minlength="2" maxlength="120" required />
+            </label>
+            <label for="contactQuantity">Quantidade
+              <input id="contactQuantity" name="quantity" type="number" min="1" max="999" value="1" required />
+            </label>
+          </div>
 
           <div class="contact-honeypot" aria-hidden="true">
             <label for="contactWebsite">Website</label>
@@ -789,6 +798,6 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app-5.13.0.js?v=5.17.1" defer></script>
+    <script src="/app-5.13.0.js?v=5.18.0" defer></script>
   </body>
 </html>
