@@ -80,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeTabNavigation();
   cacheElements();
   bindEvents();
+  initializePublicSite();
   restoreEmail();
   selectTab(readLocalPreference("mw_active_tab") || "dashboard");
   void restoreSession();
@@ -286,6 +287,31 @@ function bindEvents() {
 
   window.addEventListener("focus", () => {
     if (!elements.appView.hidden) void refreshAll(false);
+  });
+}
+
+function initializePublicSite() {
+  document.querySelectorAll(".product-buy-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      const product = button.dataset.product || "Maltworks Cloud";
+      if (product.includes("Essencial")) {
+        showSignup();
+        document.getElementById("login")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+
+      const title = document.getElementById("contactTitle");
+      const intro = elements.contactForm?.querySelector(".form-intro");
+      if (title) title.textContent = "Reserve seu Maltworks";
+      if (intro) intro.textContent = `${product}. Envie seus dados para receber o link de compra assim que a pré-venda abrir.`;
+      openContactDialog();
+    });
+  });
+
+  document.querySelectorAll('a[href="#login"]').forEach((link) => {
+    link.addEventListener("click", () => {
+      window.setTimeout(() => elements.email?.focus({ preventScroll: true }), 450);
+    });
   });
 }
 
@@ -742,7 +768,9 @@ function showLogin() {
   elements.loginView.hidden = false;
   elements.signupForm.hidden = true;
   elements.loginForm.hidden = false;
-  window.setTimeout(() => elements.email.focus(), 0);
+  if (window.location.hash === "#login" || state.pendingClaim) {
+    window.setTimeout(() => elements.email.focus(), 0);
+  }
 }
 
 function showSignup() {
@@ -751,6 +779,7 @@ function showSignup() {
   elements.loginForm.hidden = true;
   elements.signupForm.hidden = false;
   if (!elements.signupEmail.value) elements.signupEmail.value = elements.email.value.trim();
+  document.getElementById("login")?.scrollIntoView({ behavior: "smooth", block: "start" });
   window.setTimeout(() => elements.signupName.focus(), 0);
 }
 
