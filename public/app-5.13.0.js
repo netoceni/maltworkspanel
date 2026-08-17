@@ -4,6 +4,7 @@ const API_BASE = ["localhost", "127.0.0.1"].includes(window.location.hostname)
   ? "http://127.0.0.1:8787"
   : "https://api.maltworks.com.br";
 const REALTIME_BASE = API_BASE.replace(/^http/u, "ws");
+const IS_PAGES_PREVIEW = window.location.hostname.endsWith(".pages.dev");
 const ADMIN_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
   ? "http://127.0.0.1:8791/"
   : "https://admin.maltworks.com.br";
@@ -89,6 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function cacheElements() {
   for (const id of [
     "loginView", "appView", "loginForm", "email", "password", "togglePassword",
+    "previewEnvironmentNotice",
     "loginError", "loginButton", "logoutButton", "refreshButton", "globalStatus",
     "adminAccessLink", "notificationShell", "notificationButton", "notificationBadge",
     "notificationPanel", "closeNotificationButton", "notificationUnreadLabel",
@@ -291,6 +293,13 @@ function bindEvents() {
 }
 
 function initializePublicSite() {
+  if (IS_PAGES_PREVIEW) {
+    elements.previewEnvironmentNotice.hidden = false;
+    for (const form of [elements.loginForm, elements.signupForm]) {
+      form.querySelectorAll("input, button").forEach((control) => { control.disabled = true; });
+    }
+  }
+
   document.querySelectorAll(".product-buy-button").forEach((button) => {
     button.addEventListener("click", () => {
       const product = button.dataset.product || "Maltworks Cloud";
@@ -365,6 +374,10 @@ function selectTab(requestedTab) {
 async function restoreSession() {
   state.pendingClaim = readClaimFromUrl();
   renderClaimLoginHint();
+  if (IS_PAGES_PREVIEW) {
+    showLogin();
+    return;
+  }
   try {
     const response = await api("/v1/me");
     state.user = response.user;
