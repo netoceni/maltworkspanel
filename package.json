@@ -1,6 +1,6 @@
 {
   "name": "maltworks-cloud-app",
-  "version": "5.17.1",
+  "version": "5.18.0",
   "private": true,
   "scripts": {
     "dev": "wrangler pages dev public",

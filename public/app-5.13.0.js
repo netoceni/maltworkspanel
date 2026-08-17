@@ -65,6 +65,8 @@ const state = {
   notificationsOpen: false,
   notificationsBusy: false,
   notificationTimer: null,
+  presaleProduct: "Contato comercial",
+  presaleCampaign: null,
   realtimeSocket: null,
   realtimeReconnectTimer: null,
   realtimeReconnectAttempt: 0,
@@ -102,7 +104,7 @@ function cacheElements() {
     "signupPassword", "signupPasswordConfirm", "signupTerms", "signupError",
     "signupButton", "showSignupButton", "showLoginButton",
     "contactDialog", "closeContactButton", "contactForm",
-    "contactName", "contactEmail", "contactPhone", "contactWebsite", "contactConsent",
+    "contactName", "contactEmail", "contactPhone", "contactCity", "contactQuantity", "contactWebsite", "contactConsent",
     "contactError", "contactSubmitButton", "contactSuccess", "contactSuccessCloseButton",
     "claimLoginHint", "openClaimButton", "claimDialog", "closeClaimButton", "claimForm",
     "claimRegistrationToken", "claimDeviceName", "claimError",
@@ -313,6 +315,9 @@ function initializePublicSite() {
       const intro = elements.contactForm?.querySelector(".form-intro");
       if (title) title.textContent = "Reserve seu Maltworks";
       if (intro) intro.textContent = `${product}. Envie seus dados para receber o link de compra assim que a pré-venda abrir.`;
+      state.presaleProduct = product;
+      const params = new URLSearchParams(window.location.search);
+      state.presaleCampaign = params.get("utm_campaign") || params.get("campaign") || null;
       openContactDialog();
     });
   });
@@ -443,6 +448,11 @@ async function handleContactSubmit(event) {
         name: elements.contactName.value.trim(),
         email: elements.contactEmail.value.trim(),
         phone: elements.contactPhone.value.trim(),
+        product: state.presaleProduct,
+        city: elements.contactCity.value.trim(),
+        quantity: Number(elements.contactQuantity.value),
+        source: document.referrer ? "website-referral" : "website",
+        campaign: state.presaleCampaign,
         consent: elements.contactConsent.checked,
         website: elements.contactWebsite.value,
       },

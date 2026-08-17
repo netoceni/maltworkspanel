@@ -1,4 +1,8 @@
-# Maltworks Cloud Panel — versão 5.17.1
+# Maltworks Cloud Panel — versão 5.18.0
+
+## Pré-venda real
+
+O CTA de pré-venda envia produto, nome, e-mail, telefone, cidade, quantidade e campanha para a API. A confirmação é exibida somente após a aceitação do lead pela API.
 
 ## Correção 5.17.1
 
