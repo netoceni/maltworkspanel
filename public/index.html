@@ -4,15 +4,116 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#17130f" />
-    <meta name="description" content="Painel de monitoramento e controle seguro dos controladores Maltworks." />
+    <meta name="description" content="Controle inteligente de fermentação com execução local, monitoramento cloud, receitas, alarmes e densidade em tempo real." />
     <title>Maltworks Cloud</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles-5.13.0.css?v=5.16.0" />
+    <link rel="stylesheet" href="/styles-5.13.0.css?v=5.17.0" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
 
-    <section id="loginView" class="login-shell">
+    <section id="loginView" class="public-site">
+      <header class="public-header">
+        <a class="brand public-brand" href="#inicio" aria-label="Maltworks Cloud — início">
+          <span class="brand-mark" aria-hidden="true"><i></i></span>
+          <span><b>MALTWORKS</b><small>FERMENTATION SYSTEMS</small></span>
+        </a>
+        <nav class="public-nav" aria-label="Navegação principal">
+          <a href="#projeto">O PROJETO</a>
+          <a href="#produtos">PRODUTOS</a>
+          <a href="#planos">PLANOS</a>
+          <a href="#duvidas">DÚVIDAS</a>
+        </nav>
+        <a class="public-login-link" href="#login">ENTRAR <span aria-hidden="true">→</span></a>
+      </header>
+
+      <main>
+        <section id="inicio" class="public-hero">
+          <div class="public-hero-copy">
+            <p class="eyebrow">CONTROLE LOCAL. INTELIGÊNCIA NA NUVEM.</p>
+            <h1>Fermentação precisa,<br /><em>onde você estiver.</em></h1>
+            <p class="hero-lead">O Maltworks Cloud une um controlador industrial, automação segura e acompanhamento completo para você repetir seus melhores lotes.</p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="#produtos"><span>CONHECER OS PRODUTOS</span><span aria-hidden="true">→</span></a>
+              <a class="secondary-button" href="#projeto">COMO FUNCIONA</a>
+            </div>
+            <div class="hero-proof">
+              <span><b>24/7</b><small>MONITORAMENTO</small></span>
+              <span><b>OFFLINE</b><small>CONTROLE LOCAL</small></span>
+              <span><b>2</b><small>SENSORES TÉRMICOS</small></span>
+            </div>
+          </div>
+          <div class="controller-visual" aria-label="Representação do controlador Maltworks">
+            <div class="controller-panel">
+              <div class="controller-label"><span>MALTWORKS</span><small>FERMENTATION CONTROLLER</small></div>
+              <div class="controller-screen"><small>FERMENTADOR 01</small><strong>18.5<sup>°C</sup></strong><span><i></i> PERFIL ATIVO</span></div>
+              <div class="controller-status"><span><i class="cool"></i>RESFRIAMENTO</span><span><i></i>CLOUD ONLINE</span></div>
+            </div>
+            <div class="visual-orbit orbit-one"></div><div class="visual-orbit orbit-two"></div>
+          </div>
+        </section>
+
+        <section id="projeto" class="public-section project-section">
+          <div class="section-kicker"><span>01</span><p class="eyebrow">O PROJETO</p></div>
+          <div class="project-heading"><h2>Feito para controlar.<br />Projetado para evoluir.</h2><p>O ESP32 mantém sensores, relés e proteções funcionando localmente, mesmo sem internet. A nuvem amplia a experiência com histórico, receitas, alertas e acesso remoto.</p></div>
+          <div class="feature-grid">
+            <article><span class="feature-number">01</span><h3>Controle que não para</h3><p>O processo crítico continua no equipamento. Uma queda de internet não interrompe sua fermentação.</p></article>
+            <article><span class="feature-number">02</span><h3>Receitas reproduzíveis</h3><p>Crie rampas de temperatura, acompanhe cada etapa e mantenha seus perfis salvos na nuvem.</p></article>
+            <article><span class="feature-number">03</span><h3>Histórico de verdade</h3><p>Visualize temperaturas, setpoint, eventos e dados do lote em qualquer dispositivo.</p></article>
+            <article><span class="feature-number">04</span><h3>Segurança por projeto</h3><p>Proteção do compressor, alarmes configuráveis e dados isolados por organização.</p></article>
+          </div>
+        </section>
+
+        <section id="produtos" class="public-section commerce-section">
+          <div class="section-kicker"><span>02</span><p class="eyebrow">EQUIPAMENTOS</p></div>
+          <div class="commerce-heading"><div><h2>Escolha seu Maltworks.</h2><p>Preços estimados de lançamento, sujeitos à confirmação na abertura oficial da pré-venda.</p></div></div>
+          <div class="product-grid">
+            <article class="product-card">
+              <div class="product-tag">CONTROLE</div><p class="eyebrow">MALTWORKS CONTROLLER</p><h3>Comece pelo essencial.</h3>
+              <p class="product-description">Controlador completo para aquecimento e resfriamento, com dois sensores e Cloud Essencial.</p>
+              <ul><li>Controle local mesmo offline</li><li>Dois sensores DS18B20</li><li>Saídas por contato seco</li><li>Acesso ao plano Essencial</li></ul>
+              <div class="price"><small>PREÇO ESTIMADO</small><strong><sup>R$</sup> 699</strong></div>
+              <button class="button product-buy-button" type="button" data-product="Maltworks Controller — R$ 699"><span>COMPRAR NA PRÉ-VENDA</span><span>→</span></button>
+            </article>
+            <article class="product-card featured">
+              <div class="popular-ribbon">MAIS ESCOLHIDO</div><div class="product-tag">SISTEMA COMPLETO</div><p class="eyebrow">MALTWORKS COMPLETE</p><h3>Temperatura e densidade.</h3>
+              <p class="product-description">A experiência completa para acompanhar a fermentação do início ao fim.</p>
+              <ul><li>Maltworks Controller</li><li>Maltworks Dens</li><li>3 meses de Cloud Pro</li><li>Jornada completa do lote</li></ul>
+              <div class="price"><small>PREÇO ESTIMADO</small><strong><sup>R$</sup> 999</strong></div>
+              <button class="button button-primary product-buy-button" type="button" data-product="Maltworks Complete — R$ 999"><span>COMPRAR NA PRÉ-VENDA</span><span>→</span></button>
+            </article>
+            <article class="product-card">
+              <div class="product-tag">DENSIDADE</div><p class="eyebrow">MALTWORKS DENS</p><h3>Veja a fermentação acontecer.</h3>
+              <p class="product-description">Densímetro digital conectado para acompanhar densidade e temperatura sem abrir o fermentador.</p>
+              <ul><li>Leitura contínua de densidade</li><li>Atenuação e ABV estimados</li><li>Integração com o Cloud Pro</li><li>Venda avulsa</li></ul>
+              <div class="price"><small>PREÇO ESTIMADO</small><strong><sup>R$</sup> 349</strong></div>
+              <button class="button product-buy-button" type="button" data-product="Maltworks Dens — R$ 349"><span>COMPRAR NA PRÉ-VENDA</span><span>→</span></button>
+            </article>
+          </div>
+        </section>
+
+        <section id="planos" class="public-section plans-section">
+          <div class="section-kicker"><span>03</span><p class="eyebrow">MALTWORKS CLOUD</p></div>
+          <div class="project-heading"><h2>Um plano para cada fase.</h2><p>O equipamento continua controlando localmente em todos os planos. Você escolhe quanto quer ampliar sua experiência na nuvem.</p></div>
+          <div class="plan-grid">
+            <article class="plan-card"><p class="eyebrow">ESSENCIAL</p><div class="plan-price"><strong>GRÁTIS</strong></div><p>Para controlar e acompanhar o básico.</p><ul><li>1 controlador</li><li>Temperatura e setpoint</li><li>Controle remoto básico</li><li>Alarmes essenciais</li></ul><button class="plan-button product-buy-button" data-product="Cloud Essencial — Grátis" type="button">COMEÇAR GRÁTIS</button></article>
+            <article class="plan-card"><p class="eyebrow">PLUS</p><div class="plan-price"><strong><sup>R$</sup>14,90</strong><small>/ MÊS</small></div><p>Para quem quer repetir processos.</p><ul><li>Até 2 controladores</li><li>Receitas e rampas</li><li>Histórico ampliado</li><li>Notificações e CSV</li></ul><button class="plan-button product-buy-button" data-product="Cloud Plus — R$ 14,90/mês" type="button">ASSINAR PLUS</button><small class="annual-note">R$ 149/ano · aproximadamente 2 meses grátis</small></article>
+            <article class="plan-card pro"><span class="plan-badge">RECOMENDADO</span><p class="eyebrow">PRO</p><div class="plan-price"><strong><sup>R$</sup>29,90</strong><small>/ MÊS</small></div><p>Para dominar cada detalhe do lote.</p><ul><li>Até 5 controladores</li><li>Densidade em tempo real</li><li>OG, FG, atenuação e ABV</li><li>Lotes, custos e anexos</li></ul><button class="plan-button product-buy-button" data-product="Cloud Pro — R$ 29,90/mês" type="button">ASSINAR PRO</button><small class="annual-note">R$ 299/ano · aproximadamente 2 meses grátis</small></article>
+          </div>
+        </section>
+
+        <section id="duvidas" class="public-section faq-section">
+          <div class="section-kicker"><span>04</span><p class="eyebrow">DÚVIDAS FREQUENTES</p></div>
+          <div class="faq-layout"><h2>Antes de começar.</h2><div class="faq-list">
+            <details><summary>O controlador para sem internet?</summary><p>Não. Sensores, relés, setpoint e proteções são executados localmente pelo ESP32. A nuvem é usada para acompanhamento e comandos remotos.</p></details>
+            <details><summary>Preciso assinar o Cloud?</summary><p>Não. O plano Essencial acompanha o controlador sem mensalidade. Plus e Pro adicionam recursos avançados.</p></details>
+            <details><summary>Posso comprar o densímetro depois?</summary><p>Sim. O Maltworks Dens pode ser adquirido separadamente e vinculado à sua conta quando você quiser.</p></details>
+            <details><summary>Os preços já são definitivos?</summary><p>Ainda não. Nesta fase eles são estimativas de lançamento e serão confirmados antes da cobrança da pré-venda.</p></details>
+          </div></div>
+        </section>
+      </main>
+
+      <section id="login" class="login-shell access-section">
       <div class="login-story">
         <div class="brand brand-large">
           <span class="brand-mark" aria-hidden="true"><i></i></span>
@@ -96,6 +197,8 @@
           <div class="sales-callout"><span>Já possui uma conta?</span><button id="showLoginButton" type="button">ENTRAR</button></div>
         </form>
       </div>
+      </section>
+      <footer class="public-footer"><div class="brand"><span class="brand-mark" aria-hidden="true"><i></i></span><span><b>MALTWORKS</b><small>FERMENTATION SYSTEMS</small></span></div><p>CONTROLE CRÍTICO LOCAL · INTELIGÊNCIA NA NUVEM</p><span>© 2026 MALTWORKS</span></footer>
     </section>
 
     <dialog id="contactDialog" class="contact-dialog" aria-labelledby="contactTitle">
@@ -682,6 +785,6 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app-5.13.0.js?v=5.16.0" defer></script>
+    <script src="/app-5.13.0.js?v=5.17.0" defer></script>
   </body>
 </html>
