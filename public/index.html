@@ -485,7 +485,10 @@
                 <button type="button" data-temperature-range="14400">4 H</button>
                 <button type="button" data-temperature-range="43200">12 H</button>
                 <button type="button" data-temperature-range="86400">24 H</button>
-                <button type="button" data-temperature-range="all">DESDE O INÍCIO</button>
+                <button type="button" data-temperature-range="604800">7 DIAS</button>
+                <button type="button" data-temperature-range="2592000">30 DIAS</button>
+                <button type="button" data-temperature-range="7776000">90 DIAS</button>
+                <button type="button" data-temperature-range="all">ATÉ 1 ANO</button>
               </div>
             </div>
             <div class="legend"><span><i class="legend-temp"></i>GELADEIRA</span><span><i class="legend-target"></i>SETPOINT</span></div>
@@ -760,9 +763,13 @@
                 <button type="button" data-temperature-range="14400">4 H</button>
                 <button type="button" data-temperature-range="43200">12 H</button>
                 <button type="button" data-temperature-range="86400">24 H</button>
-                <button type="button" data-temperature-range="all">DESDE O INÍCIO</button>
+                <button type="button" data-temperature-range="604800">7 DIAS</button>
+                <button type="button" data-temperature-range="2592000">30 DIAS</button>
+                <button type="button" data-temperature-range="7776000">90 DIAS</button>
+                <button type="button" data-temperature-range="all">ATÉ 1 ANO</button>
               </div>
             </div>
+            <p id="historyResolutionNote" class="chart-interaction-hint" role="status" aria-live="polite">LEITURAS RECENTES · resolução conforme a fonte dos dados.</p>
             <div class="legend"><span><i class="legend-temp"></i>GELADEIRA</span><span><i class="legend-target"></i>SETPOINT</span></div>
             <p class="chart-interaction-hint">Use a roda do mouse para ajustar a escala de tempo. Passe sobre a curva para ver os valores e dê dois cliques para restaurar.</p>
             <div id="chartWrap" class="chart-wrap"><svg id="temperatureChart" viewBox="0 0 900 300" role="img" aria-label="Gráfico de temperatura"><g id="chartGrid"></g><path id="targetPath" class="chart-line target-line" d=""></path><path id="temperaturePath" class="chart-line temperature-line" d=""></path><g id="chartLabels"></g></svg><div id="chartEmpty" class="chart-empty">Carregando histórico…</div></div>
@@ -798,6 +805,6 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app-5.13.0.js?v=5.18.0" defer></script>
+    <script src="/app-5.19.0.js?v=5.19.0" defer></script>
   </body>
 </html>
