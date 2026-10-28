@@ -1035,7 +1035,9 @@ async function loadHistory(showConfirmation) {
     resolutionLabel.textContent = archived
       ? (response.status === "warming_up"
         ? "HISTÓRICO AGREGADO EM PREPARAÇÃO — Aguarde a formação dos primeiros períodos."
-        : `HISTÓRICO AGREGADO · resolução de ${Math.round((response.bucketSeconds || 300) / 60)} min · médias por período, com mínimos e máximos preservados.`)
+        : response.status === "catching_up"
+          ? `HISTÓRICO EM RECONSTRUÇÃO · dados disponíveis até ${new Date((response.completeThrough || 0) * 1000).toLocaleString("pt-BR")} · resolução de ${Math.round((response.bucketSeconds || 300) / 60)} min.`
+          : `HISTÓRICO AGREGADO · resolução de ${Math.round((response.bucketSeconds || 300) / 60)} min · médias por período, com mínimos e máximos preservados.`)
       : "LEITURAS RECENTES · Valores registrados na nuvem, com atualização em tempo real.";
   }
   state.historyFrom = response.from !== null && Number.isFinite(Number(response.from))
@@ -3140,7 +3142,10 @@ function temperatureChartBaseWindow() {
     ? Math.max(currentTime, Number(state.historyTo) || 0)
     : state.historyTo;
   if (state.historyRange === "all") {
-    return { start: state.historyFrom, end };
+    const earliestLoaded = state.history.length
+      ? Math.min(...state.history.map((point) => Number(point.receivedAt)).filter(Number.isFinite))
+      : null;
+    return { start: Number.isFinite(earliestLoaded) ? earliestLoaded : state.historyFrom, end };
   }
   const rangeSeconds = Number(state.historyRange);
   return {
