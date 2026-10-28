@@ -3,6 +3,7 @@
   "version": "5.18.0",
   "private": true,
   "scripts": {
+    "check": "node --test test/static.spec.mjs",
     "dev": "wrangler pages dev public",
     "deploy": "wrangler pages deploy public --project-name=maltworks-cloud-app"
   },
