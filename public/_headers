@@ -12,5 +12,8 @@
 /app-5.13.0.js
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
+/app-5.19.0.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
 /styles-5.13.0.css
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
