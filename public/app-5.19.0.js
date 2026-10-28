@@ -266,6 +266,11 @@ function bindEvents() {
   document.querySelectorAll("[data-temperature-range]").forEach((button) => {
     button.addEventListener("click", () => {
       if (state.chartPaused) return;
+      const requiredPlan = requiredHistoryPlan(button.dataset.temperatureRange);
+      if (requiredPlan && !historyPlanIncludes(requiredPlan)) {
+        showToast(`Esse periodo requer o plano ${requiredPlan === "pro" ? "Pro" : "Plus"}.`);
+        return;
+      }
       state.historyRange = button.dataset.temperatureRange;
       resetChartViewport();
       state.chartRevision += 1;
@@ -502,6 +507,7 @@ async function enterDashboard() {
   elements.loginView.hidden = true;
   elements.appView.hidden = false;
   renderUser();
+  updateHistoryPlanControls();
   await Promise.all([loadDevices(), loadRecipes(), loadNotifications(), loadNotificationPreferences()]);
   if (state.selectedDeviceId) {
     await Promise.all([loadLatest(), loadHistory(false), loadFermentation(), loadFirmwareStatus()]);
@@ -1010,6 +1016,36 @@ function renderFirmwareStatus() {
   elements.checkFirmwareButton.textContent = state.firmwareBusy
     ? "VERIFICANDO…"
     : active ? "ATUALIZAÇÃO EM ANDAMENTO" : "BUSCAR FIRMWARE MAIS RECENTE";
+}
+
+// Historical entitlements are received from the authenticated /v1/me
+// membership. Visual locking is informational; the API enforces limits.
+function currentHistoryPlan() {
+  const plan = state.user?.memberships?.[0]?.historyPlan;
+  return ["essential", "plus", "pro"].includes(plan) ? plan : "essential";
+}
+
+function requiredHistoryPlan(rawRange) {
+  const days = rawRange === "all" ? 365 : Number(rawRange) / 86400;
+  return days > 90 ? "pro" : days > 7 ? "plus" : null;
+}
+
+function historyPlanIncludes(required) {
+  const rank = { essential: 0, plus: 1, pro: 2 };
+  return rank[currentHistoryPlan()] >= rank[required];
+}
+
+function updateHistoryPlanControls() {
+  document.querySelectorAll("[data-temperature-range]").forEach((button) => {
+    const required = requiredHistoryPlan(button.dataset.temperatureRange);
+    const restricted = Boolean(required && !historyPlanIncludes(required));
+    button.setAttribute("aria-disabled", String(restricted));
+    if (restricted) {
+      button.title = `Disponivel no plano ${required === "pro" ? "Pro" : "Plus"}`;
+    } else {
+      button.removeAttribute("title");
+    }
+  });
 }
 
 async function loadHistory(showConfirmation) {
