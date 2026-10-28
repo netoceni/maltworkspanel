@@ -3202,3 +3202,16 @@ input:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* v5.19: tier-restricted history options remain explanatory controls;
+   the API still enforces the user's real organization entitlement. */
+.temperature-range-control button[aria-disabled="true"] {
+  opacity: 0.48;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+.temperature-range-control button[aria-disabled="true"]:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
