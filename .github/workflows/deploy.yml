@@ -32,11 +32,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate JavaScript
-        run: |
-          for file in public/app-*.js; do
-            node --check "$file"
-          done
+      - name: Validate frontend before deploy
+        run: npm run check
 
       - name: Deploy panel to Cloudflare Pages
         run: npm run deploy
