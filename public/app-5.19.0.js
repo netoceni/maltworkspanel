@@ -1,13 +1,15 @@
 "use strict";
 
-const API_BASE = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+const IS_LOCAL = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const IS_STAGING = window.location.hostname === "app-staging.maltworks.com.br";
+const API_BASE = IS_LOCAL
   ? "http://127.0.0.1:8787"
-  : "https://api.maltworks.com.br";
+  : IS_STAGING ? "https://api-staging.maltworks.com.br" : "https://api.maltworks.com.br";
 const REALTIME_BASE = API_BASE.replace(/^http/u, "ws");
 const IS_PAGES_PREVIEW = window.location.hostname.endsWith(".pages.dev");
-const ADMIN_URL = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+const ADMIN_URL = IS_LOCAL
   ? "http://127.0.0.1:8791/"
-  : "https://admin.maltworks.com.br";
+  : IS_STAGING ? "https://admin-staging.maltworks.com.br" : "https://admin.maltworks.com.br";
 const SVG_NS = "http://www.w3.org/2000/svg";
 const temperatureChartInteractions = new WeakMap();
 

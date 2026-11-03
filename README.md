@@ -1,4 +1,11 @@
-# Maltworks Cloud Panel — versão 5.18.0
+# Maltworks Cloud Panel — versão 5.19.0
+
+## Histórico inteligente 5.19
+
+- Gráficos de 30 e 90 dias no Plus e até 365 dias no Pro, com acesso validado pela API.
+- Consulta aos agregados de 5 minutos e horários, com indicação de resolução e reconstrução.
+- CSV preserva médias, mínimos, máximos, número de amostras e contagens de eventos.
+- `app-staging.maltworks.com.br` utiliza exclusivamente a API e administração de staging; o domínio oficial utiliza produção.
 
 ## Pré-venda real
 
