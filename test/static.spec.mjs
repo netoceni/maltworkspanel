@@ -60,3 +60,51 @@ test("cabeçalhos de segurança essenciais continuam configurados", () => {
   assert.match(headers, /X-Content-Type-Options: nosniff/u);
   assert.match(headers, /Cache-Control: no-store/u);
 });
+
+test("painel seleciona API e WebSocket do ambiente correto", () => {
+  const source = entrypointSource();
+  for (const [hostname, apiBase, admin] of [
+    ["localhost", "http://127.0.0.1:8787", "http://127.0.0.1:8791/"],
+    ["app-staging.maltworks.com.br", "https://api-staging.maltworks.com.br", "https://admin-staging.maltworks.com.br"],
+    ["app.maltworks.com.br", "https://api.maltworks.com.br", "https://admin.maltworks.com.br"],
+  ]) {
+    const actual = new Script(source + ";({ API_BASE, REALTIME_BASE, ADMIN_URL });").runInNewContext({
+      window: { location: { hostname } }, document: { addEventListener() {} },
+    });
+    assert.equal(actual.API_BASE, apiBase);
+    assert.equal(actual.REALTIME_BASE, apiBase.replace(/^http/u, "ws"));
+    assert.equal(actual.ADMIN_URL, admin);
+    const connectSources = headers.match(/connect-src ([^;]+)/u)[1].split(/\s+/u);
+    assert.ok(connectSources.includes(actual.API_BASE));
+    assert.ok(connectSources.includes(actual.REALTIME_BASE));
+  }
+});
+
+test("CSV agregado preserva medias, extremos e contagens sem inventar estados ON/OFF", async () => {
+  let download;
+  const toast = { textContent: "", classList: { add() {}, remove() {} } };
+  const fixture = [{
+    bucketStart: 1_800_000_000, samples: 8,
+    refrigeratorValue: 18.5, refrigeratorMin: 17, refrigeratorMax: 20,
+    thermalWellValue: 18.4, thermalWellMin: 16.9, thermalWellMax: 19.9,
+    setpoint: 18, setpointMin: 18, setpointMax: 18,
+    coolingSamples: 5, heatingSamples: 0, alarmSamples: 2, rssi: -55,
+  }];
+  new Script(entrypointSource() + `
+    elements.toast = toast;
+    state.historySource = "d1_aggregate";
+    state.history = fixture;
+    exportHistoryCsv();
+  `).runInNewContext({
+    window: { location: { hostname: "localhost" }, setTimeout() { return 0; } },
+    document: { addEventListener() {}, createElement() { return { click() {}, remove() {} }; }, body: { append() {} } },
+    URL: { createObjectURL(blob) { download = blob; return "blob:local-test"; }, revokeObjectURL() {} },
+    Blob, toast, fixture,
+  });
+  const csv = await download.text();
+  const [header, row] = csv.replace(/^\uFEFF/u, "").trim().split("\r\n");
+  assert.equal(header.split(";").length, 15);
+  assert.match(header, /geladeira_min_c;geladeira_max_c/u);
+  assert.equal(row, "2027-01-15T08:00:00.000Z;8;18.5;17;20;18.4;16.9;19.9;18;18;18;5;0;2;-55");
+  assert.doesNotMatch(csv, /\b(?:ON|OFF)\b/u);
+});

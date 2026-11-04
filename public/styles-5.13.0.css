@@ -3148,9 +3148,10 @@ input:focus-visible {
   .delete-device-actions { grid-template-columns: 1fr; }
   .device-danger-zone { align-items: stretch; flex-direction: column; }
   .signup-grid { grid-template-columns: 1fr; gap: 0; }
-  .topbar { height: 66px; padding: 0 14px; }
+  .app-shell { grid-template-rows: auto 1fr; }
+  .topbar { min-height: 66px; padding: 10px 14px; gap: 10px; }
   .topbar .brand small { display: none; }
-  .topbar-actions { gap: 6px; }
+  .topbar-actions { min-width: 0; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
   .notification-panel { position: fixed; top: 72px; right: 10px; left: 10px; width: auto; max-height: calc(100vh - 84px); }
   .notification-panel::before { display: none; }
   .notification-preference-grid { grid-template-columns: 1fr; }
@@ -3201,4 +3202,17 @@ input:focus-visible {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+
+/* v5.19: tier-restricted history options remain explanatory controls;
+   the API still enforces the user's real organization entitlement. */
+.temperature-range-control button[aria-disabled="true"] {
+  opacity: 0.48;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+.temperature-range-control button[aria-disabled="true"]:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
