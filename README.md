@@ -87,6 +87,10 @@ npm.cmd run dev
 
 ## Publicação
 
+Para a homologação isolada em `app-staging.maltworks.com.br`, use o
+[roteiro de staging](docs/staging.md). Existem configurações separadas para a
+fase privada e para ativação posterior do domínio protegido. Ainda não publicadas.
+
 ```powershell
 npm.cmd run deploy
 ```

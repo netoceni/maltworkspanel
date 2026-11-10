@@ -108,3 +108,27 @@ test("CSV agregado preserva medias, extremos e contagens sem inventar estados ON
   assert.equal(row, "2027-01-15T08:00:00.000Z;8;18.5;17;20;18.4;16.9;19.9;18;18;18;5;0;2;-55");
   assert.doesNotMatch(csv, /\b(?:ON|OFF)\b/u);
 });
+
+test("Cloud staging uses dedicated static Workers and no preview/production resources", () => {
+  const root = fileURLToPath(new URL("../", import.meta.url));
+  const stage = JSON.parse(readFileSync(join(root, "wrangler.staging.jsonc"), "utf8"));
+  const privateStage = JSON.parse(readFileSync(join(root, "wrangler.staging.private.jsonc"), "utf8"));
+  for (const c of [stage, privateStage]) {
+    assert.equal(c.name, "maltworks-cloud-site-staging");
+    assert.equal(c.account_id, "4e8c08f70722d344cf39c362a110d706");
+    assert.equal(c.observability.traces.enabled, true);
+    assert.equal(c.workers_dev, false); assert.equal(c.preview_urls, false);
+    assert.equal(c.assets.directory, "./public");
+    assert.equal(c.d1_databases, undefined); assert.equal(c.r2_buckets, undefined);
+    assert.equal(c.services, undefined);
+  }
+  assert.equal(stage.routes[0].pattern, "app-staging.maltworks.com.br");
+  assert.deepEqual(privateStage.routes, []);
+  const source = entrypointSource();
+  const settings = new Script(source + ";({ API_BASE, REALTIME_BASE, ADMIN_URL });").runInNewContext({
+    window: { location: { hostname: stage.routes[0].pattern } }, document: { addEventListener() {} },
+  });
+  assert.equal(settings.API_BASE, "https://api-staging.maltworks.com.br");
+  assert.equal(settings.REALTIME_BASE, "wss://api-staging.maltworks.com.br");
+  assert.equal(settings.ADMIN_URL, "https://admin-staging.maltworks.com.br");
+});
