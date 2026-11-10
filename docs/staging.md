@@ -13,9 +13,9 @@ Antes de qualquer publicação: conferir conta, CI e integração aprovada da AP
 conferir banco/buckets exclusivos já criados e preparar secrets novos, auditar Access e
 planejar a transferência de `api-staging` (hoje do Lab) para a API completa.
 Depois, publicar em duas fases: config privada primeiro; config com domínio
-somente após configurar Access e revisar DNS/certificado. Nenhuma publicação,
-migração ou mudança na main foi feita. A criação do D1/R2 foi autorizada e concluída
-em etapa separada, conforme inventário abaixo.
+somente após configurar Access e revisar DNS/certificado. Nenhuma publicação ou
+mudança na main foi feita. A criação do D1/R2 e a aplicação de 0001–0018 no novo D1
+foram autorizadas em etapas separadas e estão concluídas, conforme inventário abaixo.
 
 Roteiro completo e matriz de validação:
 [API — staging completo](https://github.com/netoceni/maltworksapi/blob/prepare/full-staging-20261110/docs/full-staging-20261110.md).
@@ -49,9 +49,13 @@ Na conta `4e8c08f70722d344cf39c362a110d706`, após conferir nomes livres, foram 
 - R2 `maltworks-staging-firmware` e `maltworks-staging-batch-files`, ENAM, Standard,
   zero objetos, r2.dev desativado e sem custom domains.
 
-O banco tem somente a tabela interna `_cf_KV`; a verificação SELECT gravou zero
-linhas, sem schema da aplicação ou tabela de migrations. A configuração privada
-da API foi gerada apenas localmente, ignorada pelo Git e sem upload. Não há Worker
+Após conferir novamente conta e UUID, foram aplicadas 0001–0018 somente nesse D1.
+As 36 tabelas da aplicação e 40 índices explícitos correspondem ao schema esperado
+dos mesmos arquivos em SQLite local; nenhuma migration pendente, `quick_check=ok`
+e nenhuma violação de FK. Todas as tabelas da aplicação têm zero registros; a
+validação foi somente de leitura. Evidências no
+[relatório de migrations da API](https://github.com/netoceni/maltworksapi/blob/prepare/full-staging-20261110/docs/staging-migrations-0001-0018.json).
+A configuração privada da API foi gerada apenas localmente, ignorada pelo Git e sem upload. Não há Worker
 publicado ou DO de staging criado nesta etapa. Detalhes e evidências no
 [inventário da API](https://github.com/netoceni/maltworksapi/blob/prepare/full-staging-20261110/docs/staging-resources-20261110.json).
 
@@ -59,8 +63,8 @@ publicado ou DO de staging criado nesta etapa. Detalhes e evidências no
   aprovar testadores, IdP e service token exclusivo dos simuladores.
 - [x] Criar o novo D1 `maltworks-app-staging` e os dois buckets R2 privados;
   conferir UUID/conta, nomes, ausência de dados e acesso público desativado.
-- [ ] Aplicar 0001–0018 somente no banco novo, após autorização específica;
-  nenhuma migração foi executada na etapa de criação dos recursos.
+- [x] Aplicar 0001–0018 somente no banco novo após autorização específica;
+  registro das 18 migrations e schema validados, sem dados da aplicação.
 - [ ] Gerar secrets novos e contas de teste, incluindo administrador autorizado
   e organizações dos três planos. Não copiar credenciais ou dados de produção.
 - [ ] Publicar API/Admin/Cloud primeiro com configurações privadas; criar o
@@ -75,7 +79,8 @@ publicado ou DO de staging criado nesta etapa. Detalhes e evidências no
   se habilitado, cron completo de offline/monitor D1. E-mail permanece off até
   configurar e autorizar remetente e inbox de teste restrito.
 
-Nenhum recurso remoto, migração remota, deploy ou envio de telemetria foi executado
-durante a incorporação de dependências. Na etapa posterior, somente D1/R2 foram
-criados conforme inventário acima. As observações de DNS/Access citadas no roteiro
+Na incorporação de dependências não houve mudanças remotas. Em etapas posteriores,
+D1/R2 foram criados e 0001–0018 aplicadas somente no novo D1, conforme inventário.
+Não houve deploy, merge na main, alterações em outros recursos ou envio de telemetria.
+As observações de DNS/Access citadas no roteiro
 são históricas; reconfirmá-las antes das próximas alterações ou publicações.
