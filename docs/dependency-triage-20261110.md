@@ -57,13 +57,20 @@ oficiais: [Undici 7.30.1](https://github.com/nodejs/undici/releases/tag/v7.30.1)
 
 ## Relação com staging e publicação
 
-Este PR é independente do [Cloud #12](https://github.com/netoceni/maltworkspanel/pull/12),
-que prepara o staging. A correção precisa ser incorporada ao conjunto de staging
-e seus testes repetidos antes de publicar. Este PR elimina a pendência de triagem
-do tooling nesse conjunto de versões, mas não provisiona o ambiente.
+A correção do [Cloud #13](https://github.com/netoceni/maltworkspanel/pull/13) foi
+incorporada ao conjunto do [Cloud #12](https://github.com/netoceni/maltworkspanel/pull/12),
+que prepara o staging. A triagem e a incorporação deixam de ser pendências nesse
+conjunto de versões, mas o ambiente continua sem provisionamento/publicação.
 
 Não houve mudança nos assets do frontend, no workflow de deploy Pages, na main,
 nas configurações de staging, na API ou no fluxo dos dispositivos. Não foram
 executados deploy, migração, envio de telemetria ou alterações remotas no Cloudflare.
 Continuam pendentes os recursos isolados, DNS/Access, secrets, publicação e
 validações com simuladores descritos no roteiro de staging.
+
+Atualização da incorporação: o commit `fdfb60da423e6802cee966e62e0ba91ec704c35f`
+do PR #13 foi incluído, sem conflitos, na branch `prepare/full-staging-20261110`
+do PR #12. Instalação limpa e auditorias completa/produção retornaram zero alertas;
+os nove testes do conjunto Cloud + staging + compatibilidade passaram localmente.
+O CI final e SHA do conjunto ficam no PR #12; o PR #13 e a main continuam sem merge.
+As pendências remotas atualizadas estão em [staging](staging.md).

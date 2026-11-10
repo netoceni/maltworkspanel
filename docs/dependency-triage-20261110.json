@@ -209,5 +209,34 @@
       "resolution": "Patched by pinned override; no known alerts in final full npm audit"
     }
   ],
-  "note": "Four npm vulnerability records aggregate twenty source advisories; main and GitHub alert state are unchanged."
+  "note": "Four npm vulnerability records aggregate twenty source advisories; main and GitHub alert state are unchanged.",
+  "staging_incorporation": {
+    "branch": "prepare/full-staging-20261110",
+    "target_pr": 12,
+    "source_pr": 13,
+    "source_commit": "fdfb60da423e6802cee966e62e0ba91ec704c35f",
+    "merge_commit": "2cf28c5",
+    "conflicts": false,
+    "local_tests_passed": 9,
+    "full_audit": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "production_audit": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "ci_evidence": "PR #12 records final staging head SHA and CI result",
+    "remote_staging_validation": "pending",
+    "main_merged": false,
+    "deploy_executed": false
+  }
 }
