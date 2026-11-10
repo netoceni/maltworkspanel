@@ -3,7 +3,7 @@
   "version": "5.19.0",
   "private": true,
   "scripts": {
-    "check": "node --test test/static.spec.mjs",
+    "check": "node --test test/*.spec.mjs",
     "dev": "wrangler pages dev public",
     "deploy": "wrangler pages deploy public --project-name=maltworks-cloud-app"
   },
@@ -11,6 +11,7 @@
     "wrangler": "4.118.0"
   },
   "overrides": {
-    "undici": "7.29.0"
+    "undici": "7.30.1",
+    "sharp": "0.35.5"
   }
 }
