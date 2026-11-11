@@ -10,7 +10,7 @@ As duas configurações têm logs/traces e não compartilham D1, R2 ou service b
 O navegador usa `api-staging` para HTTP/WS e `admin-staging` para o painel interno.
 
 Antes de qualquer publicação: conferir conta, CI e integração aprovada da API,
-conferir banco/buckets exclusivos já criados e preparar secrets novos, auditar Access e
+conferir banco/buckets e o cadastro futuro dos secrets já preparados localmente, auditar Access e
 planejar a transferência de `api-staging` (hoje do Lab) para a API completa.
 Depois, publicar em duas fases: config privada primeiro; config com domínio
 somente após configurar Access e revisar DNS/certificado. Nenhuma publicação ou
@@ -65,8 +65,15 @@ publicado ou DO de staging criado nesta etapa. Detalhes e evidências no
   conferir UUID/conta, nomes, ausência de dados e acesso público desativado.
 - [x] Aplicar 0001–0018 somente no banco novo após autorização específica;
   registro das 18 migrations e schema validados, sem dados da aplicação.
-- [ ] Gerar secrets novos e contas de teste, incluindo administrador autorizado
-  e organizações dos três planos. Não copiar credenciais ou dados de produção.
+- [x] Preparar três secrets exclusivos da API em cofre local DPAPI, fora do Git,
+  sem valores exibidos, arquivos plaintext ou envio remoto.
+- [ ] Cadastrar os secrets no Cloudflare em etapa autorizada. O Worker da API ainda
+  não existe: `versions secret bulk` não ativa tráfego, mas exige versão base; a
+  migration inicial de DO e a primeira publicação privada ainda precisam de revisão.
+  Não usar `secret put/bulk` normal, que publica imediatamente. Ver
+  [procedimento seguro na API](https://github.com/netoceni/maltworksapi/blob/prepare/full-staging-20261110/docs/staging-secrets.md).
+- [ ] Criar contas de teste, incluindo administrador autorizado e organizações dos
+  três planos. Não copiar credenciais ou dados de produção.
 - [ ] Publicar API/Admin/Cloud primeiro com configurações privadas; criar o
   namespace DO próprio na publicação da API. Nenhuma dessas publicações foi feita.
 - [ ] Proteger e ativar `app-staging`/`admin-staging`; planejar e autorizar a
