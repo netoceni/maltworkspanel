@@ -65,8 +65,10 @@ metadados antes/depois e permaneceram iguais. A API não foi exposta para teste 
 Detalhes e evidências no
 [inventário da API](https://github.com/netoceni/maltworksapi/blob/prepare/full-staging-20261110/docs/staging-resources-20261110.json).
 
-- [ ] Auditar DNS e políticas Access existentes com acesso de leitura adequado;
-  aprovar testadores, IdP e service token exclusivo dos simuladores.
+- [x] Auditar DNS e políticas Access existentes pelo painel autenticado;
+  identificado um testador, PIN por e-mail e dois tokens Lab, sem ampliar acesso.
+- [ ] Revisar/aplicar o plano de proteção e janela de transferência; criar o token
+  exclusivo dos simuladores da API completa e as políticas exatas dos frontends.
 - [x] Criar o novo D1 `maltworks-app-staging` e os dois buckets R2 privados;
   conferir UUID/conta, nomes, ausência de dados e acesso público desativado.
 - [x] Aplicar 0001–0018 somente no banco novo após autorização específica;
@@ -124,3 +126,21 @@ seleciona produção, portanto não utilizá-lo para integração. Logs/traces e
 declarados nas configs, mas os metadados das versões assets-only não confirmaram
 observabilidade; validar em runtime quando existir acesso. Os commits documentais
 posteriores não foram republicados.
+
+## DNS/Access e transferência preparados
+
+A auditoria visível no painel autenticado confirmou dez registros na zona, sem
+`app-staging`/`admin-staging` ou wildcard. `api-staging` continua como registro Worker
+proxied do Lab e bloqueia anônimos por Access. Existe uma aplicação, com um testador
+humano explícito, PIN por e-mail e Service Auth para dois tokens Lab. CORS no Access
+está vazio. Leituras CLI de DNS/Access da zona retornam 403; listas vazias da conta
+contradizem o painel e não provam ausência de proteção.
+
+O [plano de acesso protegido e rollback](https://github.com/netoceni/maltworksapi/blob/prepare/full-staging-20261110/docs/staging-access-cutover.md)
+propõe aplicações exatas separadas, mesma lista humana, token novo somente na API,
+cookies por hostname e OPTIONS tratado pela API completa. Reassociar apenas
+`api-staging` após conferir Access e versões; ativar os frontends somente após smoke.
+No Wrangler local, automação sem TTY pode substituir domínio ocupado sem prompt;
+não executar configuração com domínio sem prechecks e revisão do diff.
+Quatro ensaios locais de triggers e o cenário de dez simuladores passaram.
+É somente preparação: não houve alteração de Access/DNS, associação ou deploy.
