@@ -1,4 +1,4 @@
-# Cloud de staging — configuração preparada, sem publicação
+# Cloud de staging — publicado privadamente
 
 O ambiente `app-staging.maltworks.com.br` usará o Worker estático exclusivo
 `maltworks-cloud-site-staging`, com assets de `public/`. A produção continua no
@@ -6,16 +6,16 @@ Pages `maltworks-cloud-app`; `npm run deploy` continua publicando **produção**
 
 `wrangler.staging.private.jsonc` prepara o Worker sem domínio, sem workers.dev e
 sem preview URL. `wrangler.staging.jsonc` adiciona apenas o custom domain de staging.
-As duas configurações têm logs/traces e não compartilham D1, R2 ou service bindings.
+As duas configurações declaram logs/traces e não compartilham D1, R2 ou service bindings.
 O navegador usa `api-staging` para HTTP/WS e `admin-staging` para o painel interno.
 
 Antes de qualquer publicação: conferir conta, CI e integração aprovada da API,
 conferir banco/buckets e os secrets já cadastrados na API privada, auditar Access e
 planejar a transferência de `api-staging` (hoje do Lab) para a API completa.
-Depois, publicar em duas fases: config privada primeiro; config com domínio
-somente após configurar Access e revisar DNS/certificado. Nenhuma publicação ou
-mudança na main foi feita para Admin/Cloud. A API já foi publicada privadamente,
-com secrets e DO exclusivos, em etapa autorizada separada. D1/R2 e 0001–0018 estão
+O fluxo tem duas fases: config privada primeiro, já concluída; config com domínio
+somente após configurar Access e revisar DNS/certificado. Nenhum merge na main ou
+deploy de produção foi feito. API, Admin e Cloud já foram publicados privadamente;
+secrets e DO exclusivos pertencem à API. D1/R2 e 0001–0018 estão
 concluídos, conforme inventário abaixo. Nenhum domínio novo foi ativado.
 
 Roteiro completo e matriz de validação:
@@ -82,7 +82,13 @@ Detalhes e evidências no
   três planos. Não copiar credenciais ou dados de produção.
 - [x] Publicar a API com configuração privada e namespace DO próprio, com vínculos
   D1/R2 e privacidade confirmados por metadados remotos.
-- [ ] Publicar Admin/Cloud com configurações privadas, após autorização própria.
+- [x] Publicar Admin/Cloud com configurações privadas, após autorização própria.
+  Cloud: commit `0c69022299433b4830a88a18eb90fae39c72e7bd`, versão
+  `e69b60de-04f9-470c-b322-ee27f70168ad`, deployment
+  `da59bf45-2627-4968-91a3-38c05e2b6f06`. Admin: versão
+  `494d4f56-4d11-4b60-ba67-5678118b0cb3`. Ambos sem bindings de dados/secrets,
+  schedules, routes/custom domains, workers.dev ou previews. Assets e cabeçalhos
+  conferidos nas versões remotas; nenhuma republicação da API.
 - [ ] Proteger e ativar `app-staging`/`admin-staging`; planejar e autorizar a
   transferência de `api-staging` do Lab para a nova API, preservando os recursos
   antigos e registrando rollback. Não reutilizar banco, DO ou buckets de produção/Lab.
@@ -95,8 +101,26 @@ Detalhes e evidências no
 
 Na incorporação de dependências não houve mudanças remotas. Em etapas posteriores,
 D1/R2 foram criados e 0001–0018 aplicadas somente no novo D1, conforme inventário.
-Depois, somente a API de staging foi publicada privadamente, com secrets e DO.
-Não houve merge na main, publicação de produção/Lab/Admin/Cloud, alteração de
+Depois, API de staging foi publicada privadamente, com secrets e DO, seguida pelos
+Workers privados de Admin/Cloud. Inventários de Workers existentes, namespaces DO,
+Pages e suas publicações de produção, custom domains e rotas permaneceram iguais.
+Não houve merge na main, publicação de produção/Lab, alteração de
 domínios/Access ou envio de telemetria.
 As observações de DNS/Access citadas no roteiro
 são históricas; reconfirmá-las antes das próximas alterações ou publicações.
+
+O staging completo será o ambiente consolidado; o Lab ainda não foi retirado.
+Evidências da publicação em
+[staging-static-publication.json](https://github.com/netoceni/maltworksapi/blob/prepare/full-staging-20261110/docs/staging-static-publication.json)
+e roteiro executável da etapa local/matriz remota em
+[validação integrada](https://github.com/netoceni/maltworksapi/blob/prepare/full-staging-20261110/docs/staging-integrated-validation.md).
+Nesta etapa passaram 84 testes Workers/D1/WS e 38 Node na API, além de nove testes
+e ensaio de publicação em cada frontend. A integração remota de navegador continua
+pendente de acesso privado/protegido, contas QA e transferência de `api-staging`.
+
+Cloud localhost seleciona API local, mas aliases arbitrários selecionam produção;
+usar o hostname exato de staging na validação protegida. Admin localhost também
+seleciona produção, portanto não utilizá-lo para integração. Logs/traces estão
+declarados nas configs, mas os metadados das versões assets-only não confirmaram
+observabilidade; validar em runtime quando existir acesso. Os commits documentais
+posteriores não foram republicados.
