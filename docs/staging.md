@@ -10,12 +10,13 @@ As duas configurações têm logs/traces e não compartilham D1, R2 ou service b
 O navegador usa `api-staging` para HTTP/WS e `admin-staging` para o painel interno.
 
 Antes de qualquer publicação: conferir conta, CI e integração aprovada da API,
-conferir banco/buckets e o cadastro futuro dos secrets já preparados localmente, auditar Access e
+conferir banco/buckets e os secrets já cadastrados na API privada, auditar Access e
 planejar a transferência de `api-staging` (hoje do Lab) para a API completa.
 Depois, publicar em duas fases: config privada primeiro; config com domínio
 somente após configurar Access e revisar DNS/certificado. Nenhuma publicação ou
-mudança na main foi feita. A criação do D1/R2 e a aplicação de 0001–0018 no novo D1
-foram autorizadas em etapas separadas e estão concluídas, conforme inventário abaixo.
+mudança na main foi feita para Admin/Cloud. A API já foi publicada privadamente,
+com secrets e DO exclusivos, em etapa autorizada separada. D1/R2 e 0001–0018 estão
+concluídos, conforme inventário abaixo. Nenhum domínio novo foi ativado.
 
 Roteiro completo e matriz de validação:
 [API — staging completo](https://github.com/netoceni/maltworksapi/blob/prepare/full-staging-20261110/docs/full-staging-20261110.md).
@@ -55,8 +56,13 @@ dos mesmos arquivos em SQLite local; nenhuma migration pendente, `quick_check=ok
 e nenhuma violação de FK. Todas as tabelas da aplicação têm zero registros; a
 validação foi somente de leitura. Evidências no
 [relatório de migrations da API](https://github.com/netoceni/maltworksapi/blob/prepare/full-staging-20261110/docs/staging-migrations-0001-0018.json).
-A configuração privada da API foi gerada apenas localmente, ignorada pelo Git e sem upload. Não há Worker
-publicado ou DO de staging criado nesta etapa. Detalhes e evidências no
+A configuração privada da API permanece ignorada pelo Git e já foi aplicada ao
+Worker `maltworks-api-staging`, versão `7a78a58f-842d-4524-981f-70bfd65374f8`.
+DO SQLite exclusivo `a7eef169f38d4a2d850c4bbed602f043`, três secrets cadastrados sem
+valores expostos, workers.dev/previews desativados e nenhuma route/custom domain.
+O hostname `api-staging` continua no Lab antigo. Produção/Lab foram comparados por
+metadados antes/depois e permaneceram iguais. A API não foi exposta para teste HTTP.
+Detalhes e evidências no
 [inventário da API](https://github.com/netoceni/maltworksapi/blob/prepare/full-staging-20261110/docs/staging-resources-20261110.json).
 
 - [ ] Auditar DNS e políticas Access existentes com acesso de leitura adequado;
@@ -66,16 +72,17 @@ publicado ou DO de staging criado nesta etapa. Detalhes e evidências no
 - [x] Aplicar 0001–0018 somente no banco novo após autorização específica;
   registro das 18 migrations e schema validados, sem dados da aplicação.
 - [x] Preparar três secrets exclusivos da API em cofre local DPAPI, fora do Git,
-  sem valores exibidos, arquivos plaintext ou envio remoto.
-- [ ] Cadastrar os secrets no Cloudflare em etapa autorizada. O Worker da API ainda
-  não existe: `versions secret bulk` não ativa tráfego, mas exige versão base; a
-  migration inicial de DO e a primeira publicação privada ainda precisam de revisão.
-  Não usar `secret put/bulk` normal, que publica imediatamente. Ver
+  sem valores exibidos nem arquivo plaintext permanente; na preparação inicial
+  não houve envio remoto.
+- [x] Cadastrar os três secrets junto à primeira publicação privada da API e criar
+  seu DO SQLite isolado, sem ativar rotas públicas. Cofre local preservado; entrada
+  temporária protegida removida. Para futuras atualizações não ativadas, ver
   [procedimento seguro na API](https://github.com/netoceni/maltworksapi/blob/prepare/full-staging-20261110/docs/staging-secrets.md).
 - [ ] Criar contas de teste, incluindo administrador autorizado e organizações dos
   três planos. Não copiar credenciais ou dados de produção.
-- [ ] Publicar API/Admin/Cloud primeiro com configurações privadas; criar o
-  namespace DO próprio na publicação da API. Nenhuma dessas publicações foi feita.
+- [x] Publicar a API com configuração privada e namespace DO próprio, com vínculos
+  D1/R2 e privacidade confirmados por metadados remotos.
+- [ ] Publicar Admin/Cloud com configurações privadas, após autorização própria.
 - [ ] Proteger e ativar `app-staging`/`admin-staging`; planejar e autorizar a
   transferência de `api-staging` do Lab para a nova API, preservando os recursos
   antigos e registrando rollback. Não reutilizar banco, DO ou buckets de produção/Lab.
@@ -88,6 +95,8 @@ publicado ou DO de staging criado nesta etapa. Detalhes e evidências no
 
 Na incorporação de dependências não houve mudanças remotas. Em etapas posteriores,
 D1/R2 foram criados e 0001–0018 aplicadas somente no novo D1, conforme inventário.
-Não houve deploy, merge na main, alterações em outros recursos ou envio de telemetria.
+Depois, somente a API de staging foi publicada privadamente, com secrets e DO.
+Não houve merge na main, publicação de produção/Lab/Admin/Cloud, alteração de
+domínios/Access ou envio de telemetria.
 As observações de DNS/Access citadas no roteiro
 são históricas; reconfirmá-las antes das próximas alterações ou publicações.
