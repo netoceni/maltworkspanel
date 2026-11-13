@@ -418,6 +418,7 @@
           <button type="button" role="tab" data-tab="control" aria-selected="false">CONTROLE</button>
           <button type="button" role="tab" data-tab="recipes" aria-selected="false">RECEITAS E RAMPAS</button>
           <button type="button" role="tab" data-tab="gravity" aria-selected="false">LOTES</button>
+          <button type="button" role="tab" data-tab="densimeter" aria-selected="false">DENSÍMETRO</button>
           <button type="button" role="tab" data-tab="calibration" aria-selected="false">CALIBRAÇÃO</button>
           <button type="button" role="tab" data-tab="alarms" aria-selected="false">ALARMES</button>
           <button type="button" role="tab" data-tab="history" aria-selected="false">HISTÓRICO</button>
@@ -688,6 +689,24 @@
           </div>
         </section>
 
+        <section class="tab-panel" data-tab-panel="densimeter" role="tabpanel" hidden>
+          <section class="chart-card tab-card-first">
+            <div class="section-heading"><div><p class="eyebrow">DENTRO DO FERMENTADOR</p><h2>Densímetro</h2></div><span id="densimeterStatus" class="outline-badge neutral">AGUARDANDO</span></div>
+            <p id="densimeterMessage" class="section-copy" aria-live="polite">Selecione um controlador para acompanhar o densímetro.</p>
+          </section>
+          <section class="metrics-grid" aria-label="Medições do densímetro">
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon">◒</span><span>DENSIDADE</span></div><div class="secondary-value"><b id="densimeterGravity">—</b><span>SG</span></div><p id="densimeterCalibration" class="metric-caption">Aguardando dados</p></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon">°</span><span>TEMPERATURA</span></div><div class="secondary-value"><b id="densimeterTemperature">—</b><span>°C</span></div><p class="metric-caption">Medida pelo densímetro</p></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon">↯</span><span>BATERIA</span></div><div class="secondary-value"><b id="densimeterBattery">—</b><span>V</span></div><p class="metric-caption">Tensão medida na bateria</p></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon">⌁</span><span>SINAL WI-FI</span></div><div class="secondary-value"><b id="densimeterSignal">—</b><span>dBm</span></div><p class="metric-caption">Conexão do densímetro</p></article>
+          </section>
+          <section class="detail-grid">
+            <article class="detail-card"><div class="section-heading compact"><h2>Última medição</h2></div><dl class="data-list"><div><dt>Sensor</dt><dd id="densimeterIdentity">—</dd></div><div><dt>Medida em</dt><dd id="densimeterMeasuredAt">—</dd></div><div><dt>Próxima esperada</dt><dd id="densimeterNextAt">—</dd></div><div><dt>Inclinação</dt><dd id="densimeterAngle">—</dd></div></dl></article>
+            <article class="detail-card"><div class="section-heading compact"><h2>Acompanhamento</h2></div><p class="section-copy">Estas medições acompanham o controlador selecionado. Nesta etapa, o densímetro ainda não altera o controle de temperatura nem o avanço da fermentação.</p><p id="densimeterHistoryMessage" class="metric-caption">O histórico aparece após a primeira medição.</p></article>
+          </section>
+          <section class="chart-card"><div class="section-heading"><div><p class="eyebrow">MEDIÇÕES DO SENSOR</p><h2>Histórico recente</h2></div></div><div class="table-scroll"><table class="history-table"><thead><tr><th scope="col">Medida em</th><th scope="col">Densidade (SG)</th><th scope="col">Temperatura (°C)</th><th scope="col">Bateria (V)</th></tr></thead><tbody id="densimeterHistoryRows"></tbody></table></div></section>
+        </section>
+
         <section class="tab-panel" data-tab-panel="calibration" role="tabpanel" hidden>
           <section class="chart-card tab-card-first">
             <div class="section-heading"><div><p class="eyebrow">SENSORES DS18B20</p><h2>Calibração</h2></div><span id="calibrationBadge" class="outline-badge neutral">PRONTO</span></div>
@@ -805,6 +824,6 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app-5.19.0.js?v=5.19.0" defer></script>
+    <script src="/app-5.20.0.js?v=5.20.0" defer></script>
   </body>
 </html>
