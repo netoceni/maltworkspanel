@@ -7,7 +7,7 @@
     <meta name="description" content="Controle inteligente de fermentação com execução local, monitoramento cloud, receitas, alarmes e densidade em tempo real." />
     <title>Maltworks Cloud</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles-5.13.0.css?v=5.19.0" />
+    <link rel="stylesheet" href="/styles-5.13.0.css?v=5.20.0" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -85,7 +85,7 @@
             <article class="product-card">
               <div class="product-tag">DENSIDADE</div><p class="eyebrow">MALTWORKS DENS</p><h3>Veja a fermentação acontecer.</h3>
               <p class="product-description">Densímetro digital conectado para acompanhar densidade e temperatura sem abrir o fermentador.</p>
-              <ul><li>Leitura contínua de densidade</li><li>Atenuação e ABV estimados</li><li>Integração com o Cloud Pro</li><li>Venda avulsa</li></ul>
+              <ul><li>Leitura contínua de densidade</li><li>Atenuação e ABV estimados</li><li>Integração com todos os planos Cloud</li><li>Venda avulsa</li></ul>
               <div class="price"><small>PREÇO ESTIMADO</small><strong><sup>R$</sup> 349</strong></div>
               <button class="button product-buy-button" type="button" data-product="Maltworks Dens — R$ 349"><span>COMPRAR NA PRÉ-VENDA</span><span>→</span></button>
             </article>
@@ -96,7 +96,7 @@
           <div class="section-kicker"><span>03</span><p class="eyebrow">MALTWORKS CLOUD</p></div>
           <div class="project-heading"><h2>Um plano para cada fase.</h2><p>O equipamento continua controlando localmente em todos os planos. Você escolhe quanto quer ampliar sua experiência na nuvem.</p></div>
           <div class="plan-grid">
-            <article class="plan-card"><p class="eyebrow">ESSENCIAL</p><div class="plan-price"><strong>GRÁTIS</strong></div><p>Para controlar e acompanhar o básico.</p><ul><li>1 controlador</li><li>Temperatura e setpoint</li><li>Controle remoto básico</li><li>Alarmes essenciais</li></ul><button class="plan-button product-buy-button" data-product="Cloud Essencial — Grátis" type="button">COMEÇAR GRÁTIS</button></article>
+            <article class="plan-card"><p class="eyebrow">ESSENCIAL</p><div class="plan-price"><strong>GRÁTIS</strong></div><p>Para controlar e acompanhar o básico.</p><ul><li>1 controlador</li><li>Temperatura e setpoint</li><li>Leituras do densímetro</li><li>Controle remoto básico</li><li>Alarmes essenciais</li></ul><button class="plan-button product-buy-button" data-product="Cloud Essencial — Grátis" type="button">COMEÇAR GRÁTIS</button></article>
             <article class="plan-card"><p class="eyebrow">PLUS</p><div class="plan-price"><strong><sup>R$</sup>14,90</strong><small>/ MÊS</small></div><p>Para quem quer repetir processos.</p><ul><li>Até 2 controladores</li><li>Receitas e rampas</li><li>Histórico ampliado</li><li>Notificações e CSV</li></ul><button class="plan-button product-buy-button" data-product="Cloud Plus — R$ 14,90/mês" type="button">ASSINAR PLUS</button><small class="annual-note">R$ 149/ano · aproximadamente 2 meses grátis</small></article>
             <article class="plan-card pro"><span class="plan-badge">RECOMENDADO</span><p class="eyebrow">PRO</p><div class="plan-price"><strong><sup>R$</sup>29,90</strong><small>/ MÊS</small></div><p>Para dominar cada detalhe do lote.</p><ul><li>Até 5 controladores</li><li>Densidade em tempo real</li><li>OG, FG, atenuação e ABV</li><li>Lotes, custos e anexos</li></ul><button class="plan-button product-buy-button" data-product="Cloud Pro — R$ 29,90/mês" type="button">ASSINAR PRO</button><small class="annual-note">R$ 299/ano · aproximadamente 2 meses grátis</small></article>
           </div>
@@ -389,7 +389,7 @@
       <aside class="sidebar">
         <div class="sidebar-title"><span>CONTROLADORES</span><b id="deviceCount">0</b></div>
         <nav id="deviceList" class="device-list" aria-label="Controladores"></nav>
-        <div class="sidebar-foot"><span>API</span><b>5.19.0</b><span>PAINEL</span><b>5.19.0</b></div>
+        <div class="sidebar-foot"><span>API</span><b>5.20.0</b><span>PAINEL</span><b>5.20.0</b></div>
       </aside>
 
       <main class="dashboard">
@@ -418,6 +418,7 @@
           <button type="button" role="tab" data-tab="control" aria-selected="false">CONTROLE</button>
           <button type="button" role="tab" data-tab="recipes" aria-selected="false">RECEITAS E RAMPAS</button>
           <button type="button" role="tab" data-tab="gravity" aria-selected="false">LOTES</button>
+          <button type="button" role="tab" data-tab="densimeter" aria-selected="false">DENSÍMETRO</button>
           <button type="button" role="tab" data-tab="calibration" aria-selected="false">CALIBRAÇÃO</button>
           <button type="button" role="tab" data-tab="alarms" aria-selected="false">ALARMES</button>
           <button type="button" role="tab" data-tab="history" aria-selected="false">HISTÓRICO</button>
@@ -688,6 +689,24 @@
           </div>
         </section>
 
+        <section class="tab-panel" data-tab-panel="densimeter" role="tabpanel" hidden>
+          <section class="chart-card tab-card-first">
+            <div class="section-heading"><div><p class="eyebrow">DENTRO DO FERMENTADOR</p><h2>Densímetro</h2></div><span id="densimeterStatus" class="outline-badge neutral">AGUARDANDO</span></div>
+            <p id="densimeterMessage" class="section-copy" aria-live="polite">Selecione um controlador para acompanhar o densímetro.</p>
+          </section>
+          <section class="metrics-grid" aria-label="Medições do densímetro">
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon">◒</span><span>DENSIDADE</span></div><div class="secondary-value"><b id="densimeterGravity">—</b><span>SG</span></div><p id="densimeterCalibration" class="metric-caption">Aguardando dados</p></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon">°</span><span>TEMPERATURA</span></div><div class="secondary-value"><b id="densimeterTemperature">—</b><span>°C</span></div><p class="metric-caption">Medida pelo densímetro</p></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon">↯</span><span>BATERIA</span></div><div class="secondary-value"><b id="densimeterBattery">—</b><span>V</span></div><p class="metric-caption">Tensão medida na bateria</p></article>
+            <article class="metric-card"><div class="metric-top"><span class="metric-icon">⌁</span><span>SINAL WI-FI</span></div><div class="secondary-value"><b id="densimeterSignal">—</b><span>dBm</span></div><p class="metric-caption">Conexão do densímetro</p></article>
+          </section>
+          <section class="detail-grid">
+            <article class="detail-card"><div class="section-heading compact"><h2>Última medição</h2></div><dl class="data-list"><div><dt>Sensor</dt><dd id="densimeterIdentity">—</dd></div><div><dt>Medida em</dt><dd id="densimeterMeasuredAt">—</dd></div><div><dt>Próxima esperada</dt><dd id="densimeterNextAt">—</dd></div><div><dt>Inclinação</dt><dd id="densimeterAngle">—</dd></div></dl></article>
+            <article class="detail-card"><div class="section-heading compact"><h2>Acompanhamento</h2></div><p class="section-copy">Estas medições acompanham o controlador selecionado. Nesta etapa, o densímetro ainda não altera o controle de temperatura nem o avanço da fermentação.</p><p id="densimeterHistoryMessage" class="metric-caption">O histórico aparece após a primeira medição.</p></article>
+          </section>
+          <section class="chart-card"><div class="section-heading"><div><p class="eyebrow">MEDIÇÕES DO SENSOR</p><h2>Histórico recente</h2></div></div><div class="table-scroll"><table class="history-table"><thead><tr><th scope="col">Medida em</th><th scope="col">Densidade (SG)</th><th scope="col">Temperatura (°C)</th><th scope="col">Bateria (V)</th></tr></thead><tbody id="densimeterHistoryRows"></tbody></table></div></section>
+        </section>
+
         <section class="tab-panel" data-tab-panel="calibration" role="tabpanel" hidden>
           <section class="chart-card tab-card-first">
             <div class="section-heading"><div><p class="eyebrow">SENSORES DS18B20</p><h2>Calibração</h2></div><span id="calibrationBadge" class="outline-badge neutral">PRONTO</span></div>
@@ -805,6 +824,6 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app-5.19.0.js?v=5.19.0" defer></script>
+    <script src="/app-5.20.0.js?v=5.20.0" defer></script>
   </body>
 </html>
