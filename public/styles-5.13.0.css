@@ -3221,8 +3221,12 @@ input:focus-visible {
 [data-tab-panel="densimeter"] > .metrics-grid,
 [data-tab-panel="densimeter"] > .detail-grid,
 [data-tab-panel="densimeter"] > .chart-card + .chart-card { margin-top: 22px; }
+[data-tab-panel="densimeter"] > .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 [data-tab-panel="densimeter"] .table-scroll { overflow-x: auto; }
 [data-tab-panel="densimeter"] .history-table { width: 100%; border-collapse: collapse; text-align: left; }
 [data-tab-panel="densimeter"] .history-table th,
 [data-tab-panel="densimeter"] .history-table td { padding: 14px 16px; border-bottom: 1px solid var(--line, #393028); white-space: nowrap; }
 [data-tab-panel="densimeter"] .history-table th { font-size: 11px; letter-spacing: .08em; color: var(--muted, #b5aa9d); }
+@media (max-width: 700px) {
+  [data-tab-panel="densimeter"] > .detail-grid { grid-template-columns: 1fr; }
+}
