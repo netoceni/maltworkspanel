@@ -1,0 +1,213 @@
+{
+  "date": "2026-11-10",
+  "repository": "netoceni/maltworkspanel",
+  "branch": "fix/cloud-dependencies-20261110",
+  "base_sha": "15ff04bddc1e5371e0e0f71885d141d0595bb298",
+  "source": "npm audit --json",
+  "before": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 4,
+    "critical": 0,
+    "total": 4
+  },
+  "after": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "runtime_after": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "fixes": {
+    "undici": {
+      "before": "7.29.0",
+      "after": "7.30.1"
+    },
+    "sharp": {
+      "before": "0.35.2",
+      "after": "0.35.5"
+    }
+  },
+  "unchanged_toolchain": {
+    "wrangler": "4.118.0",
+    "miniflare": "5.20260730.0-alpha",
+    "workerd": "1.20260730.1"
+  },
+  "inherited_records": [
+    "miniflare",
+    "wrangler"
+  ],
+  "advisories": [
+    {
+      "package": "sharp",
+      "id": "GHSA-rgj7-g3m4-5g8c",
+      "severity": "high",
+      "affected_range": "<0.35.4",
+      "url": "https://github.com/advisories/GHSA-rgj7-g3m4-5g8c",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "sharp",
+      "id": "GHSA-wq5f-xc86-pv6w",
+      "severity": "high",
+      "affected_range": "<0.35.5",
+      "url": "https://github.com/advisories/GHSA-wq5f-xc86-pv6w",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-3wwx-pv8p-q78v",
+      "severity": "moderate",
+      "affected_range": ">=7.28.0 <7.29.1",
+      "url": "https://github.com/advisories/GHSA-3wwx-pv8p-q78v",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-pmjh-fq2x-6v4x",
+      "severity": "moderate",
+      "affected_range": ">=7.11.0 <7.29.1",
+      "url": "https://github.com/advisories/GHSA-pmjh-fq2x-6v4x",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-r53p-7pc4-xj5r",
+      "severity": "low",
+      "affected_range": ">=7.0.0 <7.29.1",
+      "url": "https://github.com/advisories/GHSA-r53p-7pc4-xj5r",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-rfgv-xxqx-mfg5",
+      "severity": "high",
+      "affected_range": ">=7.0.0 <7.29.1",
+      "url": "https://github.com/advisories/GHSA-rfgv-xxqx-mfg5",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-3xpg-4rpp-hhhm",
+      "severity": "moderate",
+      "affected_range": ">=7.15.0 <7.29.1",
+      "url": "https://github.com/advisories/GHSA-3xpg-4rpp-hhhm",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-2jfj-6hjv-fm6j",
+      "severity": "moderate",
+      "affected_range": ">=7.0.0 <7.29.1",
+      "url": "https://github.com/advisories/GHSA-2jfj-6hjv-fm6j",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-2gqq-gqf2-x968",
+      "severity": "low",
+      "affected_range": ">=7.1.0 <7.29.1",
+      "url": "https://github.com/advisories/GHSA-2gqq-gqf2-x968",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-w293-vg96-wgc3",
+      "severity": "high",
+      "affected_range": ">=7.24.1 <7.29.1",
+      "url": "https://github.com/advisories/GHSA-w293-vg96-wgc3",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-8436-99hf-9mmv",
+      "severity": "low",
+      "affected_range": ">=7.0.0 <7.29.1",
+      "url": "https://github.com/advisories/GHSA-8436-99hf-9mmv",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-rx4f-c7p8-82vq",
+      "severity": "moderate",
+      "affected_range": ">=7.0.0 <7.29.1",
+      "url": "https://github.com/advisories/GHSA-rx4f-c7p8-82vq",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-4qv8-2p9j-2685",
+      "severity": "moderate",
+      "affected_range": ">=7.0.0 <7.30.1",
+      "url": "https://github.com/advisories/GHSA-4qv8-2p9j-2685",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-f72v-6w45-q472",
+      "severity": "moderate",
+      "affected_range": ">=7.15.0 <7.30.1",
+      "url": "https://github.com/advisories/GHSA-f72v-6w45-q472",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-xjj6-f33q-929c",
+      "severity": "high",
+      "affected_range": ">=7.18.0 <7.30.1",
+      "url": "https://github.com/advisories/GHSA-xjj6-f33q-929c",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-4w7w-5xrc-9h26",
+      "severity": "high",
+      "affected_range": ">=7.0.0 <7.30.1",
+      "url": "https://github.com/advisories/GHSA-4w7w-5xrc-9h26",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-2m5v-pch6-74hx",
+      "severity": "high",
+      "affected_range": ">=7.0.0 <7.30.1",
+      "url": "https://github.com/advisories/GHSA-2m5v-pch6-74hx",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-qrxm-fqhp-jwvm",
+      "severity": "high",
+      "affected_range": ">=7.0.0 <7.30.1",
+      "url": "https://github.com/advisories/GHSA-qrxm-fqhp-jwvm",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-9fm3-97px-rjf6",
+      "severity": "moderate",
+      "affected_range": ">=7.0.0 <7.30.1",
+      "url": "https://github.com/advisories/GHSA-9fm3-97px-rjf6",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    },
+    {
+      "package": "undici",
+      "id": "GHSA-55wc-3pg8-jfw6",
+      "severity": "moderate",
+      "affected_range": ">=7.15.0 <7.30.1",
+      "url": "https://github.com/advisories/GHSA-55wc-3pg8-jfw6",
+      "resolution": "Patched by pinned override; no known alerts in final full npm audit"
+    }
+  ],
+  "note": "Four npm vulnerability records aggregate twenty source advisories; main and GitHub alert state are unchanged."
+}
